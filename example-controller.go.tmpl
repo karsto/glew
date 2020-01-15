@@ -1,0 +1,246 @@
+package controllers
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/a8m/rql"
+	extgin "github.com/karsto/duke/internal/ext-gin"
+	"github.com/karsto/duke/internal/session"
+	"github.com/karsto/duke/internal/types"
+
+	"github.com/gin-gonic/gin"
+)
+/* Expected context
+{.modelNameTitleCase}
+{.modelNamePlural}
+{.modelNamePluralTitleCase}
+{.modelNameDocs} // human friendly for docs
+{.modelIdFieldName}
+{.route}
+*/
+
+type {.modelNameTitleCase}Controller struct {
+	db     *store.Store
+	parser *rql.Parser
+}
+
+func New{.modelNameTitleCase}Controller(db *store.Store) *{.modelNameTitleCase}Controller {
+	parser := rql.MustNewParser(rql.Config{
+		Model:         model.{.modelNameTitleCase}{},
+		FieldSep:      ".",
+		DefaultLimit:  20,
+		LimitMaxValue: 10000,
+		DefaultSort:   []string{"+{.modelIdFieldName}"},
+	})
+	c := {.modelNameTitleCase}Controller{
+		db:     db,
+		parser: parser,
+	}
+	return &c
+}
+
+func (c *{.modelNameTitleCase}Controller) Register(service *gin.RouterGroup) {
+	router := service.Group("{.route}")
+	{
+		router.POST("/", c.Create)
+		router.GET("/", c.List)
+		router.GET("/:{.modelIdFieldName}", c.Read)
+		router.PUT("/:{.modelIdFieldName}", c.Update)
+		router.DELETE("/*{.modelIdFieldName}", c.Delete)
+	}
+}
+
+// Create - creates a {.modelNameDocs} based on what is passed in via the body
+// @Summary Create a {.modelNameDocs}
+// @Description create a {.modelNameDocs}
+// @Tags {.modelNamePlural}
+// @Accept  json
+// @Produce  json
+// @Param {.modelNameDocs} body model.Create{.modelNameTitleCase} true "Create {.modelNameTitleCase}"
+// @Success 201 {object} model.{.modelNameTitleCase}
+// @Failure 400 {object} types.WebError
+// @Failure 404 ""
+// @Failure 500 {object} types.WebError
+// @Router /{.route}/ [post]
+func (c *{.modelNameTitleCase}Controller) Create(ctx *gin.Context) {
+	s := session.FromContext(ctx)
+	m := model.Create{.modelNameTitleCase}{}
+	if err := ctx.ShouldBind(&m); err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypeBind)
+		return
+	}
+
+	res, err := c.db.Create{.modelNameTitleCase}(s.TenantID, m)
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypePrivate)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, res)
+}
+
+// List - returns a paged result set of {.modelNamePlural}
+// @Summary List {.modelNamePlural}
+// @Description get {.modelNamePlural}
+// @Tags {.modelNamePlural}
+// @Accept  json
+// @Produce  json
+// @Param limit query int false "the amount of records  to return per page" default(20) minimum(1) maximum(1000)
+// @Param offset query int false "the amount of records to skip when querying" defaults(0) minimum(0)
+// @Param sort query []string false "the fields to sort by. Use a `+` or `-` prefix to specify asc or desc" default("+{.modelIdFieldName}")
+// @Param filter {object} int false "the filter you would like to search by"
+
+// @Success 200 {object} model.{.modelNameTitleCase}sPage
+// @Failure 400 {object} types.WebError
+// @Failure 404 ""
+// @Failure 500 {object} types.WebError
+// @Router /{.route}/ [get]
+func (c *{.modelNameTitleCase}Controller) List(ctx *gin.Context) {
+	s := session.FromContext(ctx)
+
+	q := types.ListRequest{}
+	err := ctx.BindQuery(&q)
+	if err != nil {
+		ctx.Error(fmt.Errorf("query params invalid: %s", err.Error())).SetType(gin.ErrorTypeBind)
+		return
+	}
+
+	query := rql.Query{Limit: q.Limit, Offset: q.Offset, Sort: q.Sort, Filter: q.Filter}
+	params, err := c.parser.ParseQuery(&query)
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypePublic)
+		return
+	}
+
+	m, total, err := c.db.List{.modelNamePluralTitleCase}(s.TenantID, params.Limit, params.Offset, params.Sort, params.FilterExp, params.FilterArgs)
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypePrivate)
+		return
+	}
+
+	pageInfo := types.GetPageInfo(q.Offset, q.Limit, total, q.Sort, q.Filter)
+
+	ctx.JSON(http.StatusOK, model.{.modelNameTitleCase}sPage{
+		Records: m,
+		Page:    pageInfo,
+	})
+}
+
+// Read - reads a {.modelNameDocs} by {.modelIdFieldName}
+// @Summary read a {.modelNameDocs} by {.modelIdFieldName}
+// @Description get {.modelNameDocs} by {.modelIdFieldName}
+// @Tags {.modelNamePlural}
+// @Accept  json
+// @Produce  json
+// @Param id path int true "{.modelNameDocs}Id" minimum(1)
+// @Success 200 {object} model.{.modelNameTitleCase}
+// @Failure 400 {object} types.WebError
+// @Failure 404 ""
+// @Failure 500 {object} types.WebError
+// @Router /{.route}/{{.modelIdFieldName}} [get]
+func (c *{.modelNameTitleCase}Controller) Read(ctx *gin.Context) {
+	s := session.FromContext(ctx)
+
+	id, err := extgin.ParamInt(ctx, "{.modelIdFieldName}")
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypeBind)
+		return
+	}
+
+	m, err := c.db.Read{.modelNameTitleCase}(s.TenantID, id)
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypePrivate)
+		return
+	}
+	if m.ID <= 0 {
+		ctx.Status(http.StatusNotFound)
+		return
+	}
+	ctx.JSON(http.StatusOK, m)
+}
+
+// Update - updates a {.modelNameDocs}
+// @Summary Update a {.modelNameDocs}
+// @Description Update a {.modelNameDocs}
+// @Tags {.modelNamePlural}
+// @Accept  json
+// @Produce  json
+// @Param  id path int true "{.modelNameDocs}Id" minimum(1)
+// @Param  {.modelNameDocs} body model.Update{.modelNameTitleCase} true "Update {.modelNameTitleCase}"
+// @Success 200 {object} model.{.modelNameTitleCase}
+// @Failure 400 {object} types.WebError
+// @Failure 404 ""
+// @Failure 500 {object} types.WebError
+// @Router /{.route}/{{.modelIdFieldName}} [put]
+func (c *{.modelNameTitleCase}Controller) Update(ctx *gin.Context) {
+	s := session.FromContext(ctx)
+
+	m := model.Update{.modelNameTitleCase}{}
+	if err := ctx.ShouldBind(&m); err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypeBind)
+		return
+	}
+
+	id, err := extgin.ParamInt(ctx, "{.modelIdFieldName}")
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypeBind)
+		return
+	}
+
+	res, err := c.db.Update{.modelNameTitleCase}(s.TenantID, id, m)
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypePrivate)
+		return
+	}
+	if res.ID <= 0 {
+		ctx.Status(http.StatusNotFound)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+// Delete - delete a {.modelNameDocs}
+// @Summary delete a {.modelNameDocs}
+// @Description Delete by {.modelNameDocs} ID
+// @Tags {.modelNamePlural}
+// @Accept  json
+// @Produce  json
+// @Param id path int true "{.modelNameDocs}Id" Format(int64) minimum(1)
+// @Success 204 nil no response
+// @Failure 400 {object} types.WebError
+// @Failure 404 ""
+// @Failure 500 {object} types.WebError
+// @Router /{.route}/{{.modelIdFieldName}} [delete]
+func (c *{.modelNameTitleCase}Controller) Delete(ctx *gin.Context) {
+	s := session.FromContext(ctx)
+
+	q := types.DeleteQuery{}
+	err := ctx.ShouldBindQuery(&q)
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypeBind)
+		return
+	}
+
+	id, err := extgin.ParamOptionalInt(ctx, "{.modelIdFieldName}", 0)
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypeBind)
+		return
+	}
+	if id > 0 {
+		q.IDs = append(q.IDs, id)
+	}
+
+	success, err := c.db.Delete{.modelNameTitleCase}(s.TenantID, q.IDs)
+	if err != nil {
+		ctx.Error(err).SetType(gin.ErrorTypePrivate)
+		return
+	}
+
+	if !success {
+		ctx.Status(http.StatusNotFound)
+		return
+	}
+	ctx.Status(http.StatusNoContent)
+}

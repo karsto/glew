@@ -1,5 +1,8 @@
 ##### TODO
 
+
+- [ ] convert to crud app generator for rapid dev
+  - [ ] add base folder with starter code that is missing
 - [ ] convert into cli if possible;rw .go files; not sure how to link;
 - [ ] provide access or in house referenced utilities and update source tmpl
 - [ ] document with examples

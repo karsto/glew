@@ -14,7 +14,7 @@ type SQLStrings struct {
 	Put         string
 	Delete      string
 	CreateTable string
-	DeleteTable string
+	DropTable   string
 }
 type UtilityStrings struct {
 	InitFunc string
@@ -114,6 +114,7 @@ func getUtilities(modelName string, stringFields, nilFields []reflect.StructFiel
 	return out, nil
 }
 
+// TODO: handle different model fields for update/create
 func getSQL(modelName, idFieldName string, dbFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (SQLStrings, error) {
 	out := SQLStrings{}
 	const insertTmpl = `
@@ -178,6 +179,28 @@ func getSQL(modelName, idFieldName string, dbFields []reflect.StructField, templ
 	}
 	out.Delete = deleteSQL
 
+	// TODO: add special handling for idField, update_at, created_at
+	// TODO: map go type to db type
+	const createTblTmpl = `
+	CREATE TABLE {{.tableName}} (
+		{{.idFieldName}} serial PRIMARY KEY,
+		{{ range idx, $value := .dbFields }}
+		{{$value.Name} {{$value.dbType}},
+		{{end}}
+	);`
+	createTblSQL, err := executeTemplate("createTblSQL", deleteTmpl, ctx, templateCache)
+	if err != nil {
+		return out, err
+	}
+	out.CreateTable = createTblSQL
+
+	const dropTblTmpl = `DROP TABLE {{.tableName}};`
+	dropTblSQL, err := executeTemplate("dropTblSQL", dropTblTmpl, ctx, templateCache)
+	if err != nil {
+		return out, err
+	}
+	out.DropTable = dropTblSQL
+
 	return out, err
 }
 
@@ -224,13 +247,3 @@ func getReflect(m interface{}) (string, []reflect.StructField, map[string]reflec
 	}
 	return t.Name(), fields, tagMap
 }
-
-// TODO: example create
-// CREATE TABLE tenants (
-//     id serial PRIMARY KEY,
-//     name citext NOT NULL,
-//     is_active boolean NOT NULL DEFAULT true,
-//     metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
-//     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-//     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-// );

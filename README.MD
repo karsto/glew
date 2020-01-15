@@ -77,6 +77,7 @@ These are the primary dependencies and what they are responsible for:
 ### TODO:
 
 - [ ] document with examples
+- [ ] Add base tenant stuff
 - [ ] would eventually like to make glew be able to target folder of models.
 - [ ] enable config of meta tags used
 - [ ] consider custom tags?

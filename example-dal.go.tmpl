@@ -7,45 +7,45 @@ import (
 	"github.com/karsto/duke/internal/types"
 	"github.com/karsto/duke/pkg/api/model"
 )
-/*
 
-{.tableName}
-{.modelNameTitleCase}
-{.modelPropertiesCreate} // code; args->[]interface{}{*here*}; attached to model; like "m.property";
-{.modelPropertiesUpdate} // code; args->[]interface{}{*here*}; attached to model; like "m.property";
-{.sqlInsert}
-{.sqlList}
-{.sqlRead}
-{.sqlUpdate}
-{.sqlDelete}
+/* EXPECTED CONTEXT
+{{.tableName}}
+{{.modelNameTitleCase}}
+{{.modelPropertiesCreate}} // code; args->[]interface{}{*here*}; attached to model; like "m.property";
+{{.modelPropertiesUpdate}} // code; args->[]interface{}{*here*}; attached to model; like "m.property";
+{{.sqlInsert}}
+{{.sqlList}}
+{{.sqlRead}}
+{{.sqlUpdate}}
+{{.sqlDelete}}
 */
 
-func (store *Store) Create{.modelNameTitleCase}(tenantID int, m model.Create{.modelNameTitleCase}) (model.{.modelNameTitleCase}, error) {
-	const insertSql = `{.sqlInsert}`
+func (store *Store) Create{{.modelNameTitleCase}}(tenantID int, m model.Create{{.modelNameTitleCase}}) (model.{{.modelNameTitleCase}}, error) {
+	const insertSql = `{{.sqlInsert}}`
 
 	args := []interface{}{
-		{.modelPropertiesUpdate}
+		{{.modelPropertiesCreate}}
 	}
 
 	rows, err := store.db.Query(insertSql, tenantID, args...})
 	if err != nil {
-		return model.{.modelNameTitleCase}{}, err
+		return model.{{.modelNameTitleCase}}{}, err
 	}
 	defer rows.Close()
 	rows.Next()
 	id := 0
 	err = rows.Scan(&id)
 	if err != nil {
-		return model.{.modelNameTitleCase}{}, err
+		return model.{{.modelNameTitleCase}}{}, err
 	}
 
-	return store.Read{.modelNameTitleCase}(tenantID, id)
+	return store.Read{{.modelNameTitleCase}}(tenantID, id)
 }
 
-func (store *Store) List{pluralModel}(tenantID, limit, offset int, sortExp, filterExp string, filterArgs []interface{}) ([]model.{.modelNameTitleCase}, int, error) {
-	result := []model.{.modelNameTitleCase}{}
+func (store *Store) List{pluralModel}(tenantID, limit, offset int, sortExp, filterExp string, filterArgs []interface{}) ([]model.{{.modelNameTitleCase}}, int, error) {
+	result := []model.{{.modelNameTitleCase}}{}
 
-	const listSQL = `{.sqlList}`
+	const listSQL = `{{.sqlList}}`
 
 	whereExp := sqlutil.AddTenantCheck(tenantID, filterExp)
 	sql := sqlutil.FmtSQL(listSQL, whereExp, sortExp, limit, offset)
@@ -58,7 +58,7 @@ func (store *Store) List{pluralModel}(tenantID, limit, offset int, sortExp, filt
 	}
 	defer rows.Close()
 	for rows.Next() {
-		m := model.{.modelNameTitleCase}{}
+		m := model.{{.modelNameTitleCase}}{}
 		err := rows.StructScan(&m)
 		if err != nil {
 			return nil, 0, err
@@ -66,7 +66,7 @@ func (store *Store) List{pluralModel}(tenantID, limit, offset int, sortExp, filt
 		result = append(result, m)
 	}
 
-	total, err := store.getCount(tenantID, "{.tableName}", whereExp, filterArgs)
+	total, err := store.getCount(tenantID, "{{.tableName}}", whereExp, filterArgs)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -74,19 +74,19 @@ func (store *Store) List{pluralModel}(tenantID, limit, offset int, sortExp, filt
 	return result, total, nil
 }
 
-func (store *Store) Read{.modelNameTitleCase}(tenantID, ID int) (model.{.modelNameTitleCase}, error) {
-	result := model.{.modelNameTitleCase}{}
-	const read{.modelNameTitleCase}SQL = `{.sqlRead}`
-	rows, err := store.db.Queryx(read{.modelNameTitleCase}SQL, tenantID, ID)
+func (store *Store) Read{{.modelNameTitleCase}}(tenantID, ID int) (model.{{.modelNameTitleCase}}, error) {
+	result := model.{{.modelNameTitleCase}}{}
+	const read{{.modelNameTitleCase}}SQL = `{{.sqlRead}}`
+	rows, err := store.db.Queryx(read{{.modelNameTitleCase}}SQL, tenantID, ID)
 	if err != nil {
-		return model.{.modelNameTitleCase}{}, err
+		return model.{{.modelNameTitleCase}}{}, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		err := rows.StructScan(&result)
 		if err != nil {
-			return model.{.modelNameTitleCase}{}, err
+			return model.{{.modelNameTitleCase}}{}, err
 		}
 		return result, nil
 	}
@@ -94,22 +94,22 @@ func (store *Store) Read{.modelNameTitleCase}(tenantID, ID int) (model.{.modelNa
 	return result, nil
 }
 
-func (store *Store) Update{.modelNameTitleCase}(tenantID, id int, m model.Update{.modelNameTitleCase}) (model.{.modelNameTitleCase}, error) {
-	const update{.modelNameTitleCase}SQL = `{.sqlUpdate}`
+func (store *Store) Update{{.modelNameTitleCase}}(tenantID, id int, m model.Update{{.modelNameTitleCase}}) (model.{{.modelNameTitleCase}}, error) {
+	const update{{.modelNameTitleCase}}SQL = `{{.sqlUpdate}}`
 
 	args := []interface{}{
-		{.modelPropertiesUpdate}
+		{{.modelPropertiesUpdate}}
 	}
-	_, err := store.db.Exec(update{.modelNameTitleCase}SQL, tenantID, id, args...)
+	_, err := store.db.Exec(update{{.modelNameTitleCase}}SQL, tenantID, id, args...)
 	if err != nil {
-		return model.{.modelNameTitleCase}{}, err
+		return model.{{.modelNameTitleCase}}{}, err
 	}
 
-	return store.Read{.modelNameTitleCase}(tenantID, id)
+	return store.Read{{.modelNameTitleCase}}(tenantID, id)
 }
 
-func (store *Store) Delete{.modelNameTitleCase}(tenantID int, IDs []int) (bool, error) {
-	const delete{.modelNameTitleCase}SQL = `{.sqlDelete}`
-	didDelete, _, err := store.deleteModel(delete{.modelNameTitleCase}SQL, tenantID,Case IDs)
+func (store *Store) Delete{{.modelNameTitleCase}}(tenantID int, IDs []int) (bool, error) {
+	const delete{{.modelNameTitleCase}}SQL = `{{.sqlDelete}}`
+	didDelete, _, err := store.deleteModel(delete{{.modelNameTitleCase}}SQL, tenantID,Case IDs)
 	return didDelete, err
 }

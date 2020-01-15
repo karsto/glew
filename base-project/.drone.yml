@@ -1,0 +1,34 @@
+---
+kind: pipeline
+type: docker
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+workspace:
+  base: /go
+  path: src/github.com/karsto/base-project/
+
+steps:
+  - name: build-base-project
+    image: golang:1.13
+    commands:
+      - go vet ./...
+      - GOOS=linux CGO_ENABLED=0 GOARCH=amd64 go build -o ./bin/app-nix-64 ./
+      - make unit_test
+  - name: publish-cli
+    image: plugins/docker
+    dockerfile: ./Dockerfile
+    settings:
+      # repo: docker-registry.com/karsto/base-project
+      registry: docker-registry.com
+      auto_tag: true
+      # auth: cTSyuuzzDPKyBh63_xza # not actual auth just used to identify app
+      # auto_tag_suffix: linux-amd64
+      # tags: latest
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password

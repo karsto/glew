@@ -1,0 +1,22 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# generated via swag init for auto generated swagger documentation file
+docs/*
+
+# generated via spectacle - static swagger ui site generated from swagger file
+public/*
+
+.DS_Store
+
+config.yaml

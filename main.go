@@ -5,42 +5,56 @@ import (
 	"fmt"
 	"reflect"
 	"text/template"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
-func main() {
-	fmt.Println("test")
-
-	ctx := map[string]interface{}{}
-
-	// ctx["dbFields"] = dbFields
-	// tableName := modelName // TODO: snake case struct name
-	// ctx["tableName"] = tableName
-
-	// ctx["idFieldName"] = idFieldName
-
-	fmt.Println(ctx)
-	spew.Dump(ctx)
+type SQLStrings struct {
+	Insert      string
+	Read        string
+	List        string
+	Put         string
+	Delete      string
+	CreateTable string
+	DeleteTable string
 }
-
-type Device struct {
+type UtilityStrings struct {
+	InitFunc string
+	TrimFunc string
 }
 
 type ModelVertical struct {
+	SQL       SQLStrings
+	Utilities UtilityStrings
 }
 
-func generateVertical(m interface{}) (ModelVertical, error) {
+// TODO: GenerateApp(Verticals)
+// createM and putM are optional
+func GenerateVertical(model, createM, putM interface{}) (ModelVertical, error) {
+	if createM == nil {
+		createM = model
+	}
+	if putM == nil && createM != nil {
+		putM = createM
+	}
+	if putM == nil {
+		putM = model
+	}
+
 	out := ModelVertical{}
-	name, fields, tags := getReflect(m)
+
+	name, fields, tags := getReflect(model)
+	// TODO: idField
+	idField := ""
 	dbFields, nilFields, stringFields := getFieldTypes(fields, tags)
 
-	ctx := map[string]interface{}
+	templateCache := map[string]*template.Template{}
+	// base template
+	ctx := map[string]interface{}{}
+	ctx["tableName"] = name // snake case lower
+
 	// init base ctx, call all other features,
 	// generate code
 	return out, nil
 }
-
 
 // returns dbFields, nilFields, stringFields
 func getFieldTypes(fields []reflect.StructField, tags map[string]reflect.StructTag) ([]reflect.StructField, []reflect.StructField, []reflect.StructField) {
@@ -64,9 +78,10 @@ func getFieldTypes(fields []reflect.StructField, tags map[string]reflect.StructT
 }
 
 // returns m.somestringprop = strings.TrimSpace(m.somestringProp)
-func getTrimFunc(modelName string, stringFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (string, error) {
-	ctx["stringFields"] = stringFields
+func getUtilities(modelName string, stringFields, nilFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (UtilityStrings, error) {
+	out := UtilityStrings{}
 
+	ctx["stringFields"] = stringFields
 	const trimTmpl = `
 				func trim{{{.modelName}}}(m {{{.modelName}}}) {{{.modelName}}}{
 				{{ range _, $value := .stringFields }}
@@ -75,15 +90,15 @@ func getTrimFunc(modelName string, stringFields []reflect.StructField, templateC
 					return m
 				}`
 
-	execResult, err := executeTemplate("trim", trimTmpl, ctx, templateCache)
-	return execResult, err
-}
+	trimUtil, err := executeTemplate("trim", trimTmpl, ctx, templateCache)
+	if err != nil {
+		return out, err
+	}
+	out.TrimFunc = trimUtil
 
-// return m.someNonPrimProp != nil { m.someNonPrimProp = type{}}
-func getNilDefaults(modelName string, nilFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (string, error) {
 	ctx["nilFields"] = nilFields
 	const nilTmpl = `
-		func initialize{{.modelName}}(m {{.modelName}}) {{.modelName}}{
+	func initialize{{.modelName}}(m {{.modelName}}) {{.modelName}}{
 		{{ range _, $value := .nilFields }}
 		if m.{{.$value.Name}} == nil {
 			m.{{.$value.Name}} = {{.$value.Type.String()}}{{"{}"}}
@@ -91,14 +106,16 @@ func getNilDefaults(modelName string, nilFields []reflect.StructField, templateC
 		{{ end }}
 		return m
 		}`
-	execResult, err := executeTemplate("nil", nilTmpl, ctx, templateCache)
-	return execResult, err
+	initFunc, err := executeTemplate("nil", nilTmpl, ctx, templateCache)
+	if err != nil {
+		return out, err
+	}
+	out.InitFunc = initFunc
+	return out, nil
 }
 
-// returns dbFields, nilableFields, stringFields
-
-// returns read, list, insert, update, delete boiler
-func getInsertSQL(modelName, idFieldName string, dbFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (string, error) {
+func getSQL(modelName, idFieldName string, dbFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (SQLStrings, error) {
+	out := SQLStrings{}
 	const insertTmpl = `
 	INSERT INTO {{.tableName}} (
 				{{ range _, $value := .dbFields }}
@@ -108,62 +125,60 @@ func getInsertSQL(modelName, idFieldName string, dbFields []reflect.StructField,
 				RETURNING
 				{{.idFieldName}}
 	`
-	execResult, err := executeTemplate("insertSql", insertTmpl, ctx, templateCache)
-	return execResult, err
-}
+	insertSQL, err := executeTemplate("insertSQL", insertTmpl, ctx, templateCache)
+	if err != nil {
+		return out, err
+	}
+	out.Insert = insertSQL
 
-func getListSQL(modelName, idFieldName string, dbFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (string, error) {
-	const listSQL = `
-	SELECT
-		{{ range _, $value := .dbFields }}
-		{{$value.Name},
-		{{end}}
-	FROM {{.tableName}}
-	`
-	execResult, err := executeTemplate("listSQL", listSQL, ctx, templateCache)
-	return execResult, err
-}
-func getReadSQL(modelName, idFieldName string, dbFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (string, error) {
-	const readDeviceSQL = `
+	const listTmpl = `
+		SELECT
+			{{ range _, $value := .dbFields }}
+			{{$value.Name},
+			{{end}}
+		FROM {{.tableName}}
+		`
+	listSQL, err := executeTemplate("listSQL", listTmpl, ctx, templateCache)
+	if err != nil {
+		return out, err
+	}
+	out.List = listSQL
+
+	const readTmpl = `
 	SELECT
 		{{ range _, $value := .dbFields }}
 		{{$value.Name},
 		{{end}}
 	FROM  {{.tableName}} WHERE tenant_id = $1 AND {{.idFieldName}} = $2`
-	execResult, err := executeTemplate("readDeviceSQL", readDeviceSQL, ctx, templateCache)
-	return execResult, err
-}
+	readSQL, err := executeTemplate("readSQL", readTmpl, ctx, templateCache)
+	if err != nil {
+		return out, err
+	}
+	out.Read = readSQL
 
-func getUpdatePutSql(modelName, idFieldName string, dbFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (string, error) {
-	const updateSql = `
+	const putTmpl = `
 	UPDATE {{.tableName}} SET
 	{{ range idx, $value := .dbFields }}
 	{{$value.Name} = ${{$idx+2}},
 	{{end}}
 	WHERE tenant_id = $1 AND {{.idFieldName}} = $2
 	`
-	execResult, err := executeTemplate("updateSql", updateSql, ctx, templateCache)
-	return execResult, err
-}
+	putSQL, err := executeTemplate("putSQL", putTmpl, ctx, templateCache)
+	if err != nil {
+		return out, err
+	}
+	out.Put = putSQL
 
-func getDeletSQL(modelName, idFieldName string, dbFields []reflect.StructField, templateCache map[string]*template.Template, ctx map[string]interface{}) (string, error) {
-	const deleteSQL = `
+	const deleteTmpl = `
 	DELETE FROM {{.tableName}} WHERE tenant_id = ? AND {{.idFieldName}} IN (?)
 	`
-	execResult, err := executeTemplate("deleteSQL", deleteSQL, ctx, templateCache)
-	return execResult, err
-}
-
-func initIfNotFound(name, templateBody string, templateCache map[string]*template.Template) error {
-	_, found := templateCache[name]
-	if !found {
-		tmpl, err := template.New(name).Parse(templateBody)
-		if err != nil {
-			return err
-		}
-		templateCache[name] = tmpl
+	deleteSQL, err := executeTemplate("deleteSQL", deleteTmpl, ctx, templateCache)
+	if err != nil {
+		return out, err
 	}
-	return nil
+	out.Delete = deleteSQL
+
+	return out, err
 }
 
 func executeTemplate(name, templateBody string, ctx map[string]interface{}, templateCache map[string]*template.Template) (string, error) {
@@ -184,6 +199,18 @@ func executeTemplate(name, templateBody string, ctx map[string]interface{}, temp
 	return tpl.String(), nil
 }
 
+func initIfNotFound(name, templateBody string, templateCache map[string]*template.Template) error {
+	_, found := templateCache[name]
+	if !found {
+		tmpl, err := template.New(name).Parse(templateBody)
+		if err != nil {
+			return err
+		}
+		templateCache[name] = tmpl
+	}
+	return nil
+}
+
 // returns model name, fields, and tag map
 func getReflect(m interface{}) (string, []reflect.StructField, map[string]reflect.StructTag) {
 	t := reflect.TypeOf(m)
@@ -197,3 +224,13 @@ func getReflect(m interface{}) (string, []reflect.StructField, map[string]reflec
 	}
 	return t.Name(), fields, tagMap
 }
+
+// TODO: example create
+// CREATE TABLE tenants (
+//     id serial PRIMARY KEY,
+//     name citext NOT NULL,
+//     is_active boolean NOT NULL DEFAULT true,
+//     metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+//     updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+//     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+// );

@@ -13,18 +13,12 @@ type All struct {
 
 func (cfg *All) setDefaults() {
 	viper.SetDefault("all_port", 8084)
-	cfg.Data = NewData("")
 	cfg.Core = NewCore("")
-	cfg.Auth = NewAuth("")
-	cfg.Ws = NewWebSocket("")
 }
 
 func (cfg *All) Print() {
 	fmt.Printf("%+v\n", cfg.Port)
-	cfg.Data.Print()
 	cfg.Core.Print()
-	cfg.Auth.Print()
-	cfg.Ws.Print()
 }
 
 func NewAll(path string) *All {

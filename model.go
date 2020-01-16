@@ -1,12 +1,16 @@
-package main
+package glew
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/karst/glew/internal/files"
 	"path"
 	"reflect"
 	"text/template"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/iancoleman/strcase"
+	"github.com/karsto/glew/internal/files"
+	"github.com/otiai10/copy"
 )
 
 type SQLStrings struct {
@@ -39,16 +43,12 @@ type SimpleReflect struct {
 	StringFields []reflect.StructField
 }
 
-func main() {
-
-}
-
 func GetMeta(m interface{}) (SimpleReflect, error) {
 	t := reflect.TypeOf(m)
 
 	fields := []reflect.StructField{}
 	tagMap := map[string]reflect.StructTag{}
-	for i := 0; i <= t.NumField(); i++ {
+	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		fields = append(fields, f)
 		tagMap[f.Name] = f.Tag
@@ -81,9 +81,6 @@ func GetMeta(m interface{}) (SimpleReflect, error) {
 	return out, nil
 }
 
-// TODO: db migrations base project copy - 0 and tenant
-// TODO: add tenant fields to base
-
 type Paths struct {
 	DB          string
 	Migrations  string
@@ -105,54 +102,134 @@ func NewPaths() Paths {
 	}
 }
 
-func WriteMigration(v ModelVertical, destDir string, dbScriptIdxStart int) error {
-	// TODO:
-	migrationsDest := path.Join(destDir, NewPaths().Migrations)
-	name := v.Reflect.Name // TODO: underscore lower case
-	fileName := fmt.Sprintf("%v_%s.up.sql", dbScriptIdxStart, name)
-	err := files.WriteFile(migrationsDest, fileName, "TODO:")
-	if err != nil {
-		return err
-	}
-	fileName = fmt.Sprintf("%v_%s.drop.sql", dbScriptIdxStart, name)
-	err = files.WriteFile(migrationsDest, fileName, "TODO:")
-	if err != nil {
-		return err
+type FileContainer struct {
+	Destination string
+	FileName    string
+	Content     string
+}
+
+func WriteFiles(fContainers []FileContainer) error {
+	for _, f := range fContainers {
+		err := files.WriteFile(f.Destination, f.FileName, f.Content)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func WriteController(v ModelVertical, destDir string) error {
-	controllerName := v.Reflect.Name // TODO: underscore lower
+func WriteMigration(v ModelVertical, destDir string, dbScriptIdxStart int, stream []FileContainer) ([]FileContainer, error) {
+	migrationsDest := path.Join(destDir, NewPaths().Migrations)
+	name := strcase.ToSnake(v.Reflect.Name)
+
+	fileName := fmt.Sprintf("%v_%s.up.sql", dbScriptIdxStart, name)
+	stream = append(stream, FileContainer{
+		Content:     v.SQL.CreateTable,
+		Destination: migrationsDest,
+		FileName:    fileName,
+	})
+
+	fileName = fmt.Sprintf("%v_%s.drop.sql", dbScriptIdxStart, name)
+	stream = append(stream, FileContainer{
+		Content:     v.SQL.DropTable,
+		Destination: migrationsDest,
+		FileName:    fileName,
+	})
+
+	return stream, nil
+}
+
+func WriteController(v ModelVertical, destDir string, templateCache map[string]*template.Template, stream []FileContainer) ([]FileContainer, error) {
+	controllerName := strcase.ToSnake(v.Reflect.Name)
 	constrollerDest := path.Join(destDir, NewPaths().Controllers)
 	fileName := fmt.Sprintf("%v.go", controllerName)
-	err := files.WriteFile(constrollerDest, fileName, "TODO:")
+
+	/** EXPECTED CONTEXT
+	{{.modelNameTitleCase}}
+	{{.modelNamePlural}}
+	{{.modelNamePluralTitleCase}}
+	{{.modelNameDocs}} // human friendly for docs
+	{{.modelIdFieldName}}
+	{{.route}}
+	*/
+
+	ctx := map[string]interface{}{}
+
+	ctx["modelNameTitleCase"] = strcase.ToCamel(v.Reflect.Name)
+	ctx["modelNamePlural"] = ""                                       // TODO:
+	ctx["modelNamePluralTitleCase"] = strcase.ToCamel(v.Reflect.Name) // TODO:
+	ctx["modelNameDocs"] = strcase.ToDelimited(v.Reflect.Name, ' ')
+	ctx["modelIdFieldName"] = "ID"
+	ctx["route"] = strcase.ToKebab(v.Reflect.Name)
+	const controllerTmpl = `` // TODO: readfile()
+
+	content, err := ExecuteTemplate("storeFunc", controllerTmpl, ctx, templateCache)
 	if err != nil {
-		return err
+		return stream, err
 	}
-	return nil
+	stream = append(stream, FileContainer{
+		Content:     content,
+		Destination: constrollerDest,
+		FileName:    fileName,
+	})
+
+	return stream, nil
 }
 
-func WriteStore(v ModelVertical, destDir string) error {
-	storeName := v.Reflect.Name // TODO: underscore lower
+func WriteStore(v ModelVertical, destDir string, templateCache map[string]*template.Template, stream []FileContainer) ([]FileContainer, error) {
+	storeName := strcase.ToSnake(v.Reflect.Name)
 	storeDest := path.Join(destDir, NewPaths().Store)
 	fileName := fmt.Sprintf("%v.go", storeName)
-	err := files.WriteFile(storeDest, fileName, "TODO:")
+
+	/* EXPECTED CONTEXT
+	   {{.tableName}}
+	   {{.modelNameTitleCase}}
+	   {{.modelPropertiesCreate}} // code; args->[]interface{}{*here*}; attached to model; like "m.property";
+	   {{.modelPropertiesUpdate}} // code; args->[]interface{}{*here*}; attached to model; like "m.property";
+	   {{.sqlInsert}}
+	   {{.sqlList}}
+	   {{.sqlRead}}
+	   {{.sqlUpdate}}
+	   {{.sqlDelete}}
+	   {{.trimFunc}}
+	   {{.initFunc}}
+	*/
+	ctx := map[string]interface{}{}
+
+	ctx["tableName"] = strcase.ToSnake(v.Reflect.Name)
+	ctx["modelNameTitleCase"] = strcase.ToCamel(v.Reflect.Name)
+	ctx["modelPropertiesCreate"] = "" // TODO:
+	ctx["modelPropertiesUpdate"] = "" // TODO:
+	ctx["SQL"] = v.SQL
+	ctx["trimFunc"] = v.Utilities.TrimFunc
+	ctx["initFunc"] = v.Utilities.InitFunc
+
+	const storeTmpl = `` // TODO: readfile()
+
+	content, err := ExecuteTemplate("storeFunc", storeTmpl, ctx, templateCache)
 	if err != nil {
-		return err
+		return stream, err
 	}
-	return nil
+
+	stream = append(stream, FileContainer{
+		Content:     content,
+		Destination: storeDest,
+		FileName:    fileName,
+	})
+	return stream, nil
 }
 
-func WriteModel(v ModelVertical, destDir string) error {
-	modelName := v.Reflect.Name // TODO: underscore lower
+func WriteModel(v ModelVertical, destDir string, stream []FileContainer) ([]FileContainer, error) {
+	modelName := strcase.ToSnake(v.Reflect.Name)
 	modelDest := path.Join(destDir, NewPaths().Model)
 	fileName := fmt.Sprintf("%v.go", modelName)
-	err := files.WriteFile(modelDest, fileName, "TODO:")
-	if err != nil {
-		return err
-	}
-	return nil
+	stream = append(stream, FileContainer{
+		Content:     "TODO:",
+		Destination: modelDest,
+		FileName:    fileName,
+	})
+
+	return stream, nil
 }
 
 type Config struct {
@@ -173,29 +250,67 @@ func NewConfig() Config {
 	}
 }
 
+func GenerateAppFromModels(models []interface{}, destDir string) error {
+	templateCache := map[string]*template.Template{}
+
+	verticals := []ModelVertical{}
+	for _, m := range models {
+		vertical, err := GenerateVertical(m, nil, nil, templateCache)
+		if err != nil {
+			return err
+		}
+		verticals = append(verticals, vertical)
+	}
+	err := GenerateApp(verticals, destDir)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func GenerateApp(verticals []ModelVertical, destDir string) error {
 	// copy base
-	err := files.CopyDirectory("./base-project", destDir)
+	err := copy.Copy("./base-project", destDir)
 	if err != nil {
 		return err
 	}
 	cfg := NewConfig()
+	stream := []FileContainer{}
 	for _, v := range verticals {
 		if cfg.WriteStore {
-			WriteStore(v, destDir)
+			stream, err = WriteStore(v, destDir, stream)
+			if err != nil {
+				return err
+			}
 		}
+
 		if cfg.WriteMigrations {
 			migrationStartId := 2 // TODO: read from directory automatically
-			WriteMigration(v, destDir, migrationStartId)
+			stream, err = WriteMigration(v, destDir, migrationStartId, stream)
+			if err != nil {
+				return err
+			}
 		}
 		if cfg.WriteControllers {
-			WriteController(v, destDir)
+			stream, err = WriteController(v, destDir, stream)
+			if err != nil {
+				return err
+			}
 		}
 		if cfg.WriteModels {
-			WriteModel(v, destDir)
+			stream, err = WriteModel(v, destDir, stream)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
+	spew.Dump(stream)
+
+	err = WriteFiles(stream)
+	if err != nil {
+		panic(err)
+	}
 	return nil
 }
 
@@ -363,6 +478,24 @@ func getSQL(templateCache map[string]*template.Template, ctx map[string]interfac
 	out.DropTable = dropTblSQL
 
 	return out, err
+}
+
+func ExecuteTemplateFile(name, templateName string, ctx map[string]interface{}, templateCache map[string]*template.Template) (string, error) {
+	err := InitIfNotFound(name, templateName, templateCache)
+	if err != nil {
+		return "", err
+	}
+
+	tmpl, ok := templateCache[name]
+	if !ok {
+		return "", fmt.Errorf("template '%s' missing from cache", name)
+	}
+
+	var tpl bytes.Buffer
+	if err := tmpl.Execute(&tpl, ctx); err != nil {
+		return "", err
+	}
+	return tpl.String(), nil
 }
 
 func ExecuteTemplate(name, templateBody string, ctx map[string]interface{}, templateCache map[string]*template.Template) (string, error) {

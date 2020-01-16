@@ -3,13 +3,9 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
+	"github.com/karst/glew/internal/files"
 	"path"
-	"path/filepath"
 	"reflect"
-	"syscall"
 	"text/template"
 )
 
@@ -41,6 +37,10 @@ type SimpleReflect struct {
 	DBFields     []reflect.StructField
 	NilFields    []reflect.StructField
 	StringFields []reflect.StructField
+}
+
+func main() {
+
 }
 
 func GetMeta(m interface{}) (SimpleReflect, error) {
@@ -110,12 +110,12 @@ func WriteMigration(v ModelVertical, destDir string, dbScriptIdxStart int) error
 	migrationsDest := path.Join(destDir, NewPaths().Migrations)
 	name := v.Reflect.Name // TODO: underscore lower case
 	fileName := fmt.Sprintf("%v_%s.up.sql", dbScriptIdxStart, name)
-	err := writeFile(migrationsDest, fileName, "TODO:")
+	err := files.WriteFile(migrationsDest, fileName, "TODO:")
 	if err != nil {
 		return err
 	}
 	fileName = fmt.Sprintf("%v_%s.drop.sql", dbScriptIdxStart, name)
-	err = writeFile(migrationsDest, fileName, "TODO:")
+	err = files.WriteFile(migrationsDest, fileName, "TODO:")
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func WriteController(v ModelVertical, destDir string) error {
 	controllerName := v.Reflect.Name // TODO: underscore lower
 	constrollerDest := path.Join(destDir, NewPaths().Controllers)
 	fileName := fmt.Sprintf("%v.go", controllerName)
-	err := writeFile(constrollerDest, fileName, "TODO:")
+	err := files.WriteFile(constrollerDest, fileName, "TODO:")
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func WriteStore(v ModelVertical, destDir string) error {
 	storeName := v.Reflect.Name // TODO: underscore lower
 	storeDest := path.Join(destDir, NewPaths().Store)
 	fileName := fmt.Sprintf("%v.go", storeName)
-	err := writeFile(storeDest, fileName, "TODO:")
+	err := files.WriteFile(storeDest, fileName, "TODO:")
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func WriteModel(v ModelVertical, destDir string) error {
 	modelName := v.Reflect.Name // TODO: underscore lower
 	modelDest := path.Join(destDir, NewPaths().Model)
 	fileName := fmt.Sprintf("%v.go", modelName)
-	err := writeFile(modelDest, fileName, "TODO:")
+	err := files.WriteFile(modelDest, fileName, "TODO:")
 	if err != nil {
 		return err
 	}
@@ -169,12 +169,13 @@ func NewConfig() Config {
 		WriteStore:       true,
 		WriteMigrations:  true,
 		WriteControllers: true,
+		WriteModels:      true,
 	}
 }
 
 func GenerateApp(verticals []ModelVertical, destDir string) error {
 	// copy base
-	err := CopyDirectory("./base-project", destDir)
+	err := files.CopyDirectory("./base-project", destDir)
 	if err != nil {
 		return err
 	}
@@ -251,7 +252,7 @@ func getUtilities(templateCache map[string]*template.Template, ctx map[string]in
 					return m
 				}`
 
-	trimUtil, err := executeTemplate("trim", trimTmpl, ctx, templateCache)
+	trimUtil, err := ExecuteTemplate("trim", trimTmpl, ctx, templateCache)
 	if err != nil {
 		return out, err
 	}
@@ -266,7 +267,7 @@ func getUtilities(templateCache map[string]*template.Template, ctx map[string]in
 		{{ end }}
 		return m
 		}`
-	initFunc, err := executeTemplate("nil", nilTmpl, ctx, templateCache)
+	initFunc, err := ExecuteTemplate("nil", nilTmpl, ctx, templateCache)
 	if err != nil {
 		return out, err
 	}
@@ -286,7 +287,7 @@ func getSQL(templateCache map[string]*template.Template, ctx map[string]interfac
 				RETURNING
 				{{.idFieldName}}
 	`
-	insertSQL, err := executeTemplate("insertSQL", insertTmpl, ctx, templateCache)
+	insertSQL, err := ExecuteTemplate("insertSQL", insertTmpl, ctx, templateCache)
 	if err != nil {
 		return out, err
 	}
@@ -299,7 +300,7 @@ func getSQL(templateCache map[string]*template.Template, ctx map[string]interfac
 			{{end}}
 		FROM {{.tableName}}
 		`
-	listSQL, err := executeTemplate("listSQL", listTmpl, ctx, templateCache)
+	listSQL, err := ExecuteTemplate("listSQL", listTmpl, ctx, templateCache)
 	if err != nil {
 		return out, err
 	}
@@ -311,7 +312,7 @@ func getSQL(templateCache map[string]*template.Template, ctx map[string]interfac
 		{{$value.Name},
 		{{end}}
 	FROM  {{.tableName}} WHERE tenant_id = $1 AND {{.idFieldName}} = $2`
-	readSQL, err := executeTemplate("readSQL", readTmpl, ctx, templateCache)
+	readSQL, err := ExecuteTemplate("readSQL", readTmpl, ctx, templateCache)
 	if err != nil {
 		return out, err
 	}
@@ -324,7 +325,7 @@ func getSQL(templateCache map[string]*template.Template, ctx map[string]interfac
 	{{end}}
 	WHERE tenant_id = $1 AND {{.idFieldName}} = $2
 	`
-	putSQL, err := executeTemplate("putSQL", putTmpl, ctx, templateCache)
+	putSQL, err := ExecuteTemplate("putSQL", putTmpl, ctx, templateCache)
 	if err != nil {
 		return out, err
 	}
@@ -333,7 +334,7 @@ func getSQL(templateCache map[string]*template.Template, ctx map[string]interfac
 	const deleteTmpl = `
 	DELETE FROM {{.tableName}} WHERE tenant_id = ? AND {{.idFieldName}} IN (?)
 	`
-	deleteSQL, err := executeTemplate("deleteSQL", deleteTmpl, ctx, templateCache)
+	deleteSQL, err := ExecuteTemplate("deleteSQL", deleteTmpl, ctx, templateCache)
 	if err != nil {
 		return out, err
 	}
@@ -348,14 +349,14 @@ func getSQL(templateCache map[string]*template.Template, ctx map[string]interfac
 		{{$value.Name} {{$value.dbType}},
 		{{end}}
 	);`
-	createTblSQL, err := executeTemplate("createTblSQL", deleteTmpl, ctx, templateCache)
+	createTblSQL, err := ExecuteTemplate("createTblSQL", deleteTmpl, ctx, templateCache)
 	if err != nil {
 		return out, err
 	}
 	out.CreateTable = createTblSQL
 
 	const dropTblTmpl = `DROP TABLE {{.tableName}};`
-	dropTblSQL, err := executeTemplate("dropTblSQL", dropTblTmpl, ctx, templateCache)
+	dropTblSQL, err := ExecuteTemplate("dropTblSQL", dropTblTmpl, ctx, templateCache)
 	if err != nil {
 		return out, err
 	}
@@ -364,8 +365,8 @@ func getSQL(templateCache map[string]*template.Template, ctx map[string]interfac
 	return out, err
 }
 
-func executeTemplate(name, templateBody string, ctx map[string]interface{}, templateCache map[string]*template.Template) (string, error) {
-	err := initIfNotFound(name, templateBody, templateCache)
+func ExecuteTemplate(name, templateBody string, ctx map[string]interface{}, templateCache map[string]*template.Template) (string, error) {
+	err := InitIfNotFound(name, templateBody, templateCache)
 	if err != nil {
 		return "", err
 	}
@@ -382,7 +383,7 @@ func executeTemplate(name, templateBody string, ctx map[string]interface{}, temp
 	return tpl.String(), nil
 }
 
-func initIfNotFound(name, templateBody string, templateCache map[string]*template.Template) error {
+func InitIfNotFound(name, templateBody string, templateCache map[string]*template.Template) error {
 	_, found := templateCache[name]
 	if !found {
 		tmpl, err := template.New(name).Parse(templateBody)
@@ -392,121 +393,4 @@ func initIfNotFound(name, templateBody string, templateCache map[string]*templat
 		templateCache[name] = tmpl
 	}
 	return nil
-}
-
-// copy utilities
-func CopyDirectory(scrDir, dest string) error {
-	entries, err := ioutil.ReadDir(scrDir)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		sourcePath := filepath.Join(scrDir, entry.Name())
-		destPath := filepath.Join(dest, entry.Name())
-
-		fileInfo, err := os.Stat(sourcePath)
-		if err != nil {
-			return err
-		}
-
-		stat, ok := fileInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			return fmt.Errorf("failed to get raw syscall.Stat_t data for '%s'", sourcePath)
-		}
-
-		switch fileInfo.Mode() & os.ModeType {
-		case os.ModeDir:
-			if err := CreateIfNotExists(destPath, 0755); err != nil {
-				return err
-			}
-			if err := CopyDirectory(sourcePath, destPath); err != nil {
-				return err
-			}
-		case os.ModeSymlink:
-			if err := CopySymLink(sourcePath, destPath); err != nil {
-				return err
-			}
-		default:
-			if err := Copy(sourcePath, destPath); err != nil {
-				return err
-			}
-		}
-
-		if err := os.Lchown(destPath, int(stat.Uid), int(stat.Gid)); err != nil {
-			return err
-		}
-
-		isSymlink := entry.Mode()&os.ModeSymlink != 0
-		if !isSymlink {
-			if err := os.Chmod(destPath, entry.Mode()); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func Copy(srcFile, dstFile string) error {
-	out, err := os.Create(dstFile)
-	defer out.Close()
-	if err != nil {
-		return err
-	}
-
-	in, err := os.Open(srcFile)
-	defer in.Close()
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(out, in)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func Exists(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return false
-	}
-
-	return true
-}
-
-func writeFile(dest, name, content string) error {
-	f, err := os.Create(path.Join(dest, name))
-	if err != nil {
-		return err
-	}
-	_, err = f.WriteString(content)
-	if err != nil {
-		err := f.Close()
-		if err != nil {
-			return err
-		}
-		return err
-	}
-	return nil
-}
-
-func CreateIfNotExists(dir string, perm os.FileMode) error {
-	if Exists(dir) {
-		return nil
-	}
-
-	if err := os.MkdirAll(dir, perm); err != nil {
-		return fmt.Errorf("failed to create directory: '%s', error: '%s'", dir, err.Error())
-	}
-
-	return nil
-}
-
-func CopySymLink(source, dest string) error {
-	link, err := os.Readlink(source)
-	if err != nil {
-		return err
-	}
-	return os.Symlink(link, dest)
 }

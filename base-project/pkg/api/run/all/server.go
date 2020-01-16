@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin/binding"
-	extgin "github.com/karsto/base-project/internal/ext-gin"
-	"github.com/karsto/base-project/internal/validation"
-	"github.com/karsto/base-project/pkg/api/config"
-	coresrv "github.com/karsto/base-project/pkg/api/run/core"
+	"github.com/karsto/gl/pkg/api/config"
+	coresrv "github.com/karsto/gl/pkg/api/run/core"
+	extgin "github.com/karsto/glew/internal/ext-gin"
+	"github.com/karsto/glew/internal/validation"
 )
 
 func GetControllers(cfg *config.All) ([]extgin.Registerer, error) {

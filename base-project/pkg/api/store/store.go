@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx"
 
 	"github.com/jmoiron/sqlx"
-	extsqlx "github.com/karsto/base-project/internal/ext-sqlx"
-	"github.com/karsto/base-project/internal/sqlutil"
+	extsqlx "github.com/karsto/glew/internal/ext-sqlx"
+	"github.com/karsto/glew/internal/sqlutil"
 
 	// DB DRIVER
 	_ "github.com/jackc/pgx/stdlib"

@@ -3,7 +3,7 @@ package store
 import (
 	"strings"
 
-	"github.com/karsto/base-project/internal/sqlutil"
+	"github.com/karsto/glew/internal/sqlutil"
 	"github.com/karsto/base-project/pkg/api/model"
 )
 
@@ -17,6 +17,8 @@ import (
 {{.sqlRead}}
 {{.sqlUpdate}}
 {{.sqlDelete}}
+{{.trimFunc}}
+{{.initFunc}}
 */
 
 func (store *Store) Create{{.modelNameTitleCase}}(tenantID int, m model.Create{{.modelNameTitleCase}}) (model.{{.modelNameTitleCase}}, error) {
@@ -112,3 +114,8 @@ func (store *Store) Delete{{.modelNameTitleCase}}(tenantID int, IDs []int) (bool
 	didDelete, _, err := store.deleteModel(delete{{.modelNameTitleCase}}SQL, tenantID,Case IDs)
 	return didDelete, err
 }
+
+// TODO: move to model after glew can handle model regen
+{{.trimFunc}}
+
+{{.initFunc}}

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	extgin "github.com/karsto/base-project/internal/ext-gin"
-	"github.com/karsto/base-project/internal/validation"
+	extgin "github.com/karsto/glew/internal/ext-gin"
+	"github.com/karsto/glew/internal/validation"
 	"github.com/karsto/base-project/pkg/api/config"
 	"github.com/karsto/base-project/pkg/api/controllers"
 	"github.com/karsto/base-project/pkg/api/store"
@@ -17,10 +17,7 @@ func GetControllers(cfg *config.Core) ([]extgin.Registerer, error) {
 	store := store.NewStore(cfg.DBConfig)
 
 	controllers := []extgin.Registerer{
-		controllers.NewFolderController(store),
 		controllers.NewTenantController(store),
-		controllers.NewDeviceTypeController(store),
-		controllers.NewDeviceController(store),
 	}
 	return controllers, nil
 }

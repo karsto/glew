@@ -5,7 +5,7 @@ import (
 
 	"github.com/Shyp/go-dberror"
 	"github.com/gin-gonic/gin"
-	"github.com/karsto/base-project/internal/types"
+	"github.com/karsto/glew/internal/types"
 	uuid "github.com/satori/go.uuid"
 )
 

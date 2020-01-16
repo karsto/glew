@@ -1,13 +1,14 @@
 # glew
+[![time tracker](https://wakatime.com/badge/github/karsto/glew.svg)](https://wakatime.com/badge/github/karsto/glew)
 
-`glew` is a rapid prototyping and development tool, used to create starter web boiler-plate projects with CRUD+ functionality. The goal is to be able to create a set of models, feed it to glew, and have developer friendly flexible and ready to be developed against code come out. Its basically a glorified project template that makes some assumptions and 3rd party library choices to provide more functionality. This is not ready for external use.
+`glew` is a raw, highly opinionated, rapid prototyping and development tool, used to create starter web boiler-plate projects with CRUD+ functionality. The goal is to be able to create a set of convention following models, feed it to glew, and have developer friendly flexible and ready for prod code comes out. Its basically a glorified project template that makes some assumptions and 3rd party library choices to provide more functionality.
 
 The basic functionality out of the box:
 
 * Complex multi app cli starter template.
   * Includes db creator + initializer wrapper.
-  * Inlcudes Api only command + placeholders for `All` command.
-  * Includes seprate run cmd and server for flexible ops.
+  * Includes functionality for dynamic api stack.
+  * Includes separate run cmd and server for flexible ops.
 * Basic error handling
   * panic handling.
   * hides internal errors.
@@ -38,7 +39,9 @@ For each model provided a "feature" will be created. Each Feature has the follow
 
 Planned
 
-* UI crud component based on vue / buefy with async paging and routes
+* UI CRUD async component+routes TODO:
+* Tenants CRUD API TODO:
+* Model
 * Complete base project that can run as output target
   * includes security / routing
 * Generate test coverage
@@ -50,8 +53,9 @@ Planned
 * UI validation gen
 * .JS/.go client gen
 * TenantId implementation changes to alternative? / make optional based on if present in model.
-* auth,auth
+* auth,auth authboss, ladon, hydra
 * Support string (use 'code' convention)/ uuid for id field
+* Metrics/Monitoring
 
 ## Library Choices
 
@@ -70,6 +74,8 @@ These are the primary dependencies and what they are responsible for:
 | [migrate](https://github.com/golang-migrate/migrate)    |       db migration       |
 | [viper](https://github.com/spf13/viper)                 |      configuration       |
 | [cobra](https://github.com/spf13/cobra)                 |           cli            |
+| [ladon](https://github.com/ory/ladon)                   |      authorization       |
+| [authboss](https://github.com/volatiletech/authboss)    |      authentication      |
 | [vue.js](https://github.com/go-playground/validator)    |    base ui framework     |
 | [bulma](https://bulma.io/)                              |    base css framework    |
 | [buefy](https://buefy.org/)                             | buefy + bulma components |
@@ -77,13 +83,20 @@ These are the primary dependencies and what they are responsible for:
 ### TODO:
 
 - [ ] document with examples
-- [ ] Add base tenant stuff
-- [ ] would eventually like to make glew be able to target folder of models.
+- [ ] would like to target folder of models (.go files ) https://github.com/Ompluscator/dynamic-struct
 - [ ] enable config of meta tags used
-- [ ] consider custom tags?
+- [ ] consider custom tags for additional config
 - [ ] .vue UI project
 - [ ] Consider adding other recipes
+  - [ ] redis where applicable
   - [ ] web socket
   - [ ] rpc
   - [ ] services layer
   - [ ] ui admin
+  - [ ] infra tmpl with terraform -> aws, simple docker-compose.
+  - [ ] file store
+  - [ ] email templates
+  - [ ] user subscriptions
+  - [ ] msg layer util
+  - [ ] lambda engines, messages, time series
+  - [ ] notifications

@@ -15,6 +15,10 @@ func Exists(filePath string) bool {
 }
 
 func WriteFile(dest, name, content string) error {
+	err := CreateIfNotExists(dest, 755)
+	if err != nil {
+		return err
+	}
 	f, err := os.Create(path.Join(dest, name))
 	if err != nil {
 		return err

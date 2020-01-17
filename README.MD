@@ -5,7 +5,7 @@
 
 The basic functionality out of the box:
 
-* Complex multi app cli starter template.
+* Complex multi app cli pattern .
   * Includes db creator + initializer wrapper.
   * Includes functionality for dynamic api stack.
   * Includes separate run cmd and server for flexible ops.

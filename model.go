@@ -1,9 +1,9 @@
 package glew
 
 import (
+	"path/filepath"
 	"reflect"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/iancoleman/strcase"
 )
 
@@ -191,17 +191,16 @@ func NewStoreCtx(v VerticalMeta, sql SQLStrings) StoreCtx {
 	return out
 }
 
-func GenerateApp(destDir, appName string, verticals []VerticalMeta) ([]FileContainer, error) {
+func GenerateApp(destRoot, appName string, verticals []VerticalMeta) ([]FileContainer, error) {
 	// copy base
+	destDir := filepath.Join(destRoot, "base-project")
 	cfg := NewConfig()
 	out := []FileContainer{}
 	if cfg.CopyBase {
-		spew.Dump("FILES")
-		files, err := GenerateBaseApp(destDir, appName)
+		files, err := GenerateBaseApp(destRoot, appName)
 		if err != nil {
 			return out, err
 		}
-		spew.Dump(files)
 		out = append(out, files...)
 	}
 

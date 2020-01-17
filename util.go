@@ -1,14 +1,12 @@
 package glew
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/karsto/glew/internal/files"
 )
 
@@ -102,7 +100,6 @@ type FileContainer struct {
 
 func ReadFiles(source, destDir string) ([]FileContainer, error) {
 	out := []FileContainer{}
-	println(fmt.Sprintf("SOURCE: %s", source))
 	err := filepath.Walk(source,
 		// path includes filename
 		func(path string, info os.FileInfo, err error) error {
@@ -112,7 +109,6 @@ func ReadFiles(source, destDir string) ([]FileContainer, error) {
 			if info.IsDir() {
 				return nil
 			}
-			spew.Dump("path")
 
 			name := info.Name()
 			nIdx := strings.LastIndex(path, name)
@@ -138,7 +134,7 @@ func ReadFiles(source, destDir string) ([]FileContainer, error) {
 
 func WriteFiles(fContainers []FileContainer) error {
 	for _, f := range fContainers {
-		err := files.WriteFile(f.Destination, f.FileName, f.Content)
+		err := files.WriteFile("./"+f.Destination, f.FileName, f.Content)
 		if err != nil {
 			return err
 		}

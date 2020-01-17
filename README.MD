@@ -100,3 +100,14 @@ These are the primary dependencies and what they are responsible for:
   - [ ] msg layer util
   - [ ] lambda engines, messages, time series
   - [ ] notifications
+
+
+#### Manual/Bugs
+
+- [] karsto/base-project broken
+- [] cli bugs
+- [] missing migrations
+- [] gomod
+- [] missing models
+- [] missing session
+- [] server.go coresrv

@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"github.com/karsto/base-project/pkg/api/run/core"
+	"{{.TODOProjectImportPath}}/pkg/api/run/core"
 	"github.com/spf13/cobra"
 )
 

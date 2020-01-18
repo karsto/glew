@@ -6,9 +6,9 @@ import (
 
 	extgin "github.com/karsto/glew/internal/ext-gin"
 	"github.com/karsto/glew/internal/validation"
-	"github.com/karsto/base-project/pkg/api/config"
-	"github.com/karsto/base-project/pkg/api/controllers"
-	"github.com/karsto/base-project/pkg/api/store"
+	"{{.TODOProjectImportPath}}/pkg/api/config"
+	"{{.TODOProjectImportPath}}/pkg/api/controllers"
+	"{{.TODOProjectImportPath}}/pkg/api/store"
 
 	"github.com/gin-gonic/gin/binding"
 )
@@ -18,6 +18,7 @@ func GetControllers(cfg *config.Core) ([]extgin.Registerer, error) {
 
 	controllers := []extgin.Registerer{
 		controllers.NewTenantController(store),
+		{{.TODOControllersRegistration}}
 	}
 	return controllers, nil
 }

@@ -40,7 +40,7 @@ func TestPlayground(t *testing.T) {
 	/*
 		CONFIG
 	*/
-	destDir := "./out"
+	destDir := "out"
 	verticals := []VerticalMeta{}
 
 	vertical, err := GenerateVertical(TestModel{}, "TestVertical", CreateTestModel{}, UpdateTestModel{})
@@ -48,6 +48,7 @@ func TestPlayground(t *testing.T) {
 		spew.Dump(err)
 		panic(err)
 	}
+
 	verticals = append(verticals, vertical)
 
 	files, err := GenerateApp(destDir, "testApp", verticals)

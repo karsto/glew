@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/karsto/base-project/internal/session"
-	"github.com/karsto/base-project/pkg/api/model"
-	"github.com/karsto/base-project/pkg/api/store"
+	"{{.TODOProjectImportPath}}/internal/session"
+	"{{.TODOProjectImportPath}}/pkg/api/model"
+	"{{.TODOProjectImportPath}}/pkg/api/store"
 )
 
 type TenantController struct {

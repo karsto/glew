@@ -5,14 +5,17 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin/binding"
-	"github.com/karsto/gl/pkg/api/config"
-	coresrv "github.com/karsto/gl/pkg/api/run/core"
 	extgin "github.com/karsto/glew/internal/ext-gin"
 	"github.com/karsto/glew/internal/validation"
+
+	coresrv "{{.TODOProjectImportPath}}/pkg/api/run/core"
+	"{{.TODOProjectImportPath}}/pkg/api/config"
 )
 
 func GetControllers(cfg *config.All) ([]extgin.Registerer, error) {
-	controllers := []extgin.Registerer{}
+	controllers := []extgin.Registerer{
+		{{.TODOControllersRegistration2}}
+	}
 
 	coreControllers, err := coresrv.GetControllers(cfg.Core)
 	if err != nil {

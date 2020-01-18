@@ -10,7 +10,7 @@ RUN echo "nobody:x:1:" >> /etc/group
 COPY db/migrations db/migrations
 
 # copy build output to entrypoint dir
-COPY bin/app-nix-64 /bin/base-project
+COPY bin/app-nix-64 /bin/{{.AppName}}
 
 USER nobody
-ENTRYPOINT [ "base-project" ]
+ENTRYPOINT [ "{{.AppName}}" ]

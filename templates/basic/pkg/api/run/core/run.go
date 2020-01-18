@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/karsto/duke/pkg/api/config"
+	"github.com/{{.TODOProjectImportPath}}/pkg/api/config"
 )
 
 func Run() {

@@ -10,11 +10,72 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+type SField struct {
+	Name string
+	Type string
+	Tags string
+}
+
+func GenerateStruct(structName string, fields []SField) (string, error) {
+	structTpl := `
+	type {{.StructName}} struct {
+		{{.FieldsStr}}
+	}
+	`
+
+	fields2 := []string{}
+	for _, f := range fields {
+		fields2 = append(fields2, fmt.Sprintf("%v %v `%v`", f.Name, f.Type, f.Tags))
+	}
+
+	listF := func(idx int, cur, res string) string {
+		return fmt.Sprintf("\t%v\n", cur)
+	}
+	fieldStr := AggStrList(fields2, listF)
+	fieldStr = strings.Trim(fieldStr, "\n")
+	ctx := map[string]string{
+		"StructName": structName,
+		"FieldsStr":  fieldStr,
+	}
+	content, err := ExecuteTemplate("structTpl", structTpl, ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return content, nil
+}
+
 func GenerateBaseApp(destDir, appName string) ([]FileContainer, error) {
-	files, err := ReadFiles("./base-project", destDir)
+	files, err := ReadFiles("static", destDir)
 	if err != nil {
 		return files, err
 	}
+
+	// for _, v := range files {
+	// v.Destination = strings.Trim(v.Destination, "static")
+	// }
+
+	basics, err := ReadFiles("templates/basic", destDir)
+	if err != nil {
+		return files, err
+	}
+	// for _, v := range basics {
+	// v.Destination = strings.Trim(v.Destination, "templates/basic")
+	// }
+
+	basicCTX := map[string]string{
+		"AppName": appName,
+	}
+
+	for _, v := range basics {
+		content, err := ExecuteTemplate("bsc:"+destDir+v.FileName, v.Content, basicCTX)
+		if err != nil {
+			return files, err
+		}
+		v.Content = content
+	}
+	files = append(files, basics...)
+
 	return files, err
 }
 
@@ -38,8 +99,8 @@ type StoreCtx struct {
 	TableName                string
 	ModelNameTitleCase       string
 	ModelNamePluralTitleCase string
-	CreateProperties         []string
-	UpdateProperties         []string
+	CreatePropertiesList     string
+	UpdatePropertiesList     string
 	SQL                      SQLStrings
 }
 
@@ -48,7 +109,7 @@ func GenerateStoreFile(destDir, verticalName string, ctx StoreCtx) (FileContaine
 	storeDest := path.Join(destDir, NewPaths().Store)
 	fileName := fmt.Sprintf("%v.go", storeName)
 
-	b, err := ioutil.ReadFile("example-dal.go.tmpl")
+	b, err := ioutil.ReadFile("templates/example-dal.go")
 	if err != nil {
 		return FileContainer{}, err
 	}
@@ -97,7 +158,7 @@ func GenerateControllerFile(destDir, verticalName string, ctx ControllerCtx) (Fi
 	name := strcase.ToSnake(verticalName)
 	fileName := fmt.Sprintf("%v.go", name)
 
-	b, err := ioutil.ReadFile("example-controller.go.tmpl")
+	b, err := ioutil.ReadFile("templates/example-controller.go")
 	if err != nil {
 		return FileContainer{}, err
 	}
@@ -182,48 +243,97 @@ type SQLCtx struct {
 	IDColName        string
 }
 
+// aggFun index,vString, resultString -> additionToResultIfAny
+func AggStrList(strs []string, aggFunc func(int, string, string) string) string {
+	out := strings.Builder{}
+	for i, v := range strs {
+		agg := aggFunc(i, v, out.String())
+		out.WriteString(agg)
+	}
+	return out.String()
+}
+
 func GenerateSQL(ctx SQLCtx) (SQLStrings, error) {
 	out := SQLStrings{}
+
+	listF := func(idx int, cur, res string) string {
+		return fmt.Sprintf("\t\t\t%v,\n", cur)
+	}
+	insertColList := AggStrList(ctx.InsertFields, listF)
+	insertColList = strings.Trim(insertColList, ",\n")
+	listVal := func(idx int, cur, res string) string {
+		return fmt.Sprintf("\t\t$%v,\n", cur)
+	}
+	insertValListStr := AggStrList(ctx.InsertFields, listVal)
+	insertValListStr = strings.Trim(insertValListStr, ",\n")
+	insertCtx := map[string]string{
+		"TableName":        ctx.TableName,
+		"InsertColList":    insertColList,
+		"InsertValListStr": insertValListStr,
+		"IDColName":        ctx.IDColName,
+	}
 	const insertTmpl = `
-	INSERT INTO {{.TableName}} ({{ range $value := .InsertFields }}
-		{{$value}},{{end}}
-	VALUES({{range $idx, $val := .InsertFields }},
-		${{$idx}},{{end}}
+	INSERT INTO {{.TableName}} (
+{{.InsertColList}}
+	VALUES(
+{{.InsertValListStr}}
 	)
-	RETURNING
-		{{.IDColName}}
+	RETURNING {{.IDColName}}
 	`
-	insertSQL, err := ExecuteTemplate("insertSQL", insertTmpl, ctx)
+	insertSQL, err := ExecuteTemplate("insertSQL", insertTmpl, insertCtx)
 	if err != nil {
 		return out, err
 	}
 	out.Insert = insertSQL
 
+	readColList := AggStrList(ctx.DBFields, listF)
+	readColList = strings.Trim(readColList, ",\n")
+	listColCtx := map[string]string{
+		"TableName":   ctx.TableName,
+		"ReadColList": readColList,
+	}
 	const listTmpl = `
-		SELECT{{ range $value := .DBFields }}{{$value}},{{end}}
+		SELECT
+{{.ReadColList}}
 		FROM {{.TableName}}
 		`
-	listSQL, err := ExecuteTemplate("listSQL", listTmpl, ctx)
+	listSQL, err := ExecuteTemplate("listSQL", listTmpl, listColCtx)
 	if err != nil {
 		return out, err
 	}
 	out.List = listSQL
 
+	readCtx := map[string]string{
+		"TableName":   ctx.TableName,
+		"ReadColList": readColList,
+		"IDColName":   ctx.IDColName,
+	}
 	const readTmpl = `
-	SELECT{{ range $value := .DBFields }}
-		{{$value}},{{end}}
-	FROM  {{.TableName}} WHERE tenant_id = $1 AND {{.IDColName}} = $2`
-	readSQL, err := ExecuteTemplate("readSQL", readTmpl, ctx)
+		SELECT
+{{.ReadColList}}
+		FROM  {{.TableName}} WHERE tenant_id = $1 AND {{.IDColName}} = $2`
+	readSQL, err := ExecuteTemplate("readSQL", readTmpl, readCtx)
 	if err != nil {
 		return out, err
 	}
 	out.Read = readSQL
+
+	updateF := func(idx int, cur, res string) string {
+		return fmt.Sprintf("\t\t%v = $%v,\n", cur, idx+3)
+	}
+	putColList := AggStrList(ctx.PutFields, updateF)
+	putColList = strings.Trim(putColList, ",\n")
+	putCtx := map[string]string{
+		"TableName":  ctx.TableName,
+		"PutColList": putColList,
+		"IDColName":  ctx.IDColName,
+	}
 	const putTmpl = `
-	UPDATE {{.TableName}} SET{{ range $idx, $value := .PutFields }}
-		{{$value}} = ${{add $idx 2 }},{{end}}
+	UPDATE {{.TableName}} SET
+{{.PutColList}}
 	WHERE tenant_id = $1 AND {{.IDColName}} = $2
 	`
-	putSQL, err := ExecuteTemplate("putSQL", putTmpl, ctx)
+	putSQL, err := ExecuteTemplate("putSQL", putTmpl, putCtx)
 	if err != nil {
 		return out, err
 	}
@@ -238,11 +348,17 @@ func GenerateSQL(ctx SQLCtx) (SQLStrings, error) {
 	}
 	out.Delete = deleteSQL
 
+	createColList := AggStrList(ctx.CreateStatements, listF)
+	createColList = strings.Trim(createColList, ",\n")
+	createCtx := map[string]string{
+		"TableName":     ctx.TableName,
+		"CreateColList": createColList,
+	}
 	const createTblTmpl = `
-	CREATE TABLE {{.TableName}} ({{range $idx, $value := .CreateStatements}}{{$length := len .CreateStatements }}
-	{{$value}}{{if ne $length $idx }},{{end}}{{end}}
+	CREATE TABLE {{.TableName}} (
+{{.CreateColList}}
 	);`
-	createTblSQL, err := ExecuteTemplate("createTblSQL", deleteTmpl, ctx)
+	createTblSQL, err := ExecuteTemplate("createTblSQL", createTblTmpl, createCtx)
 	if err != nil {
 		return out, err
 	}

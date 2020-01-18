@@ -117,6 +117,7 @@ func ReadFiles(source, destDir string) ([]FileContainer, error) {
 			if err != nil {
 				return err
 			}
+			parentPath = strings.TrimPrefix(parentPath, source)
 			destination := filepath.Join(destDir, parentPath)
 			f := FileContainer{
 				Destination: destination,

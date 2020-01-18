@@ -9,9 +9,8 @@ import (
 func (store *Store) Create{{.ModelNameTitleCase}}(tenantID int, m model.Create{{.ModelNameTitleCase}}) (model.{{.ModelNameTitleCase}}, error) {
 	const insertSql = `{{.SQL.Insert}}`
 
-	args := []interface{}{{"{"}}{{ range $idx, $value := .CreateProperties }}{
-		m.{$value}},
-{{end}}
+	args := []interface{}{{"{"}}
+{{.CreatePropertiesList}}
 	}
 
 	rows, err := store.db.Query(insertSql, tenantID, args...)
@@ -84,9 +83,8 @@ func (store *Store) Read{{.ModelNameTitleCase}}(tenantID, ID int) (model.{{.Mode
 func (store *Store) Update{{.ModelNameTitleCase}}(tenantID, id int, m model.Update{{.ModelNameTitleCase}}) (model.{{.ModelNameTitleCase}}, error) {
 	const update{{.ModelNameTitleCase}}SQL = `{{.SQL.Put}}`
 
-	args := []interface{}{{"{"}}{{ range $idx, $value := .UpdateProperties }}{
-		m.{$value}},
-{{end}}
+	args := []interface{}{{"{"}}
+{{.UpdatePropertiesList}}
 	}
 	_, err := store.db.Exec(update{{.ModelNameTitleCase}}SQL, tenantID, id, args...)
 	if err != nil {
@@ -98,6 +96,6 @@ func (store *Store) Update{{.ModelNameTitleCase}}(tenantID, id int, m model.Upda
 
 func (store *Store) Delete{{.ModelNameTitleCase}}(tenantID int, IDs []int) (bool, error) {
 	const delete{{.ModelNameTitleCase}}SQL = `{{.SQL.Delete}}`
-	didDelete, _, err := store.deleteModel(delete{{.ModelNameTitleCase}}SQL, tenantID,Case IDs)
+	didDelete, _, err := store.deleteModel(delete{{.ModelNameTitleCase}}SQL, tenantID, IDs)
 	return didDelete, err
 }

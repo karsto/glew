@@ -1,8 +1,9 @@
 package glew
 
 import (
-	"path/filepath"
+	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/iancoleman/strcase"
 )
@@ -170,22 +171,30 @@ func NewSQLCtx(vertical VerticalMeta) SQLCtx {
 func NewStoreCtx(v VerticalMeta, sql SQLStrings) StoreCtx {
 	tableName := strcase.ToSnake(v.Name)
 	modelNameTitleCase := strcase.ToCamel(v.Name)
+
 	createProperties := []string{}
 	for _, v := range v.CreateModel.Fields {
 		createProperties = append(createProperties, v.Name)
 	}
+	listF := func(idx int, cur, res string) string {
+		return fmt.Sprintf("\t\tm.%v,\n", cur)
+	}
+	createProperList := AggStrList(createProperties, listF)
+	createProperList = strings.Trim(createProperList, "\n")
 	updateProperties := []string{}
 	for _, v := range v.UpdateModel.Fields {
 		updateProperties = append(updateProperties, v.Name)
 	}
+	updateProperList := AggStrList(updateProperties, listF)
+	updateProperList = strings.Trim(updateProperList, "\n")
 	modelNamePluralTitleCase := pluralizer.Plural(modelNameTitleCase)
 
 	out := StoreCtx{
 		ModelNameTitleCase:       modelNameTitleCase,
 		ModelNamePluralTitleCase: modelNamePluralTitleCase,
 		TableName:                tableName,
-		CreateProperties:         createProperties,
-		UpdateProperties:         updateProperties,
+		CreatePropertiesList:     createProperList,
+		UpdatePropertiesList:     updateProperList,
 		SQL:                      sql,
 	}
 	return out
@@ -193,7 +202,7 @@ func NewStoreCtx(v VerticalMeta, sql SQLStrings) StoreCtx {
 
 func GenerateApp(destRoot, appName string, verticals []VerticalMeta) ([]FileContainer, error) {
 	// copy base
-	destDir := filepath.Join(destRoot, "base-project")
+	destDir := destRoot //  filepath.Join(destRoot, "base-project")
 	cfg := NewConfig()
 	out := []FileContainer{}
 	if cfg.CopyBase {
@@ -205,6 +214,8 @@ func GenerateApp(destRoot, appName string, verticals []VerticalMeta) ([]FileCont
 	}
 
 	verticalsOut := []GeneratedVertical{}
+	migrationStartId := 2 // TODO: read from directory automatically
+
 	for _, v := range verticals {
 		verticalOut := GeneratedVertical{}
 
@@ -225,12 +236,12 @@ func GenerateApp(destRoot, appName string, verticals []VerticalMeta) ([]FileCont
 		}
 
 		if cfg.Migrations {
-			migrationStartId := 2 // TODO: read from directory automatically
 			migrations, err := GenerateMigrationFiles(destDir, v.Name, sql, migrationStartId)
 			if err != nil {
 				return out, err
 			}
 			verticalOut.Migrations = append(verticalOut.Migrations, migrations...)
+			migrationStartId += 1
 		}
 
 		if cfg.Controllers {
@@ -253,6 +264,7 @@ func GenerateApp(destRoot, appName string, verticals []VerticalMeta) ([]FileCont
 	}
 
 	for _, v := range verticalsOut {
+		out = append(out, v.Migrations...)
 		out = append(out, v.Controllers...)
 		out = append(out, v.Store...)
 		out = append(out, v.Models...)

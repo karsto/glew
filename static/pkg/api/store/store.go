@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
@@ -8,7 +9,6 @@ import (
 	"github.com/jackc/pgx"
 
 	"github.com/jmoiron/sqlx"
-	extsqlx "github.com/karsto/glew/internal/ext-sqlx"
 	"github.com/karsto/glew/internal/sqlutil"
 
 	// DB DRIVER
@@ -33,7 +33,6 @@ func InitDB(config pgx.ConnConfig, maxConnections int, timeout time.Duration) (*
 	db.SetMaxOpenConns(maxConnections)
 	return sqlx.NewDb(db, "pgx"), nil
 }
-
 
 type Store struct {
 	db *sqlx.DB

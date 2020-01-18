@@ -9,10 +9,10 @@ platform:
 
 workspace:
   base: /go
-  path: src/github.com/karsto/base-project/
+  path: src/{{.TODOPath}}
 
 steps:
-  - name: build-base-project
+  - name: build-{{.AppName}}
     image: golang:1.13
     commands:
       - go vet ./...
@@ -22,8 +22,8 @@ steps:
     image: plugins/docker
     dockerfile: ./Dockerfile
     settings:
-      # repo: docker-registry.com/karsto/base-project
-      registry: docker-registry.com
+      # repo: {{.TODODockerRegistry}}/{{.TODODockerRepo}}
+      registry: { { .TODODockerRegistry } }
       auto_tag: true
       # auth: cTSyuuzzDPKyBh63_xza # not actual auth just used to identify app
       # auto_tag_suffix: linux-amd64

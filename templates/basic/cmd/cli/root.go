@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"{{.TODOProjectImportPath}}/cmd/cli/apis"
+	"{{.TODOProjectImportPath}}/cmd/cli/tools"
 )
 
 var RootCmd = &cobra.Command{

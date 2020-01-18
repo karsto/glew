@@ -1,7 +1,7 @@
 package all
 
 import (
-	"github.com/karsto/base-project/pkg/api/config"
+	"{{.TODOProjectImportPath}}/pkg/api/config"
 )
 
 func Run() {

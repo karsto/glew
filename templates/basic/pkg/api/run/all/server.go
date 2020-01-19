@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin/binding"
-	extgin "github.com/karsto/glew/internal/ext-gin"
-	"github.com/karsto/glew/internal/validation"
+	extgin "github.com/karsto/glew/common/ext-gin"
+	"github.com/karsto/glew/common/validation"
 
 	coresrv "{{.TODOProjectImportPath}}/pkg/api/run/core"
 	"{{.TODOProjectImportPath}}/pkg/api/config"

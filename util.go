@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/karsto/glew/internal/files"
+	"github.com/karsto/glew/common/files"
 )
 
 type GoType struct {

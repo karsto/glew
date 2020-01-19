@@ -3,8 +3,8 @@ package store
 import (
 	"strings"
 
-	"github.com/karsto/glew/internal/sqlutil"
-		"{{.TODOProjectImportPath}}/pkg/api/model"
+	"github.com/karsto/glew/common/sqlutil"
+	"{{.TODOProjectImportPath}}/pkg/api/model"
 )
 
 func (store *Store) Create{{.ModelNameTitleCase}}(tenantID int, m model.Create{{.ModelNameTitleCase}}) (model.{{.ModelNameTitleCase}}, error) {

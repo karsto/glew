@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/karsto/glew/internal/sqlutil"
+	"github.com/karsto/glew/common/sqlutil"
 
 	// DB DRIVER
 	"github.com/jackc/pgx/stdlib"

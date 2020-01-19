@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/karsto/glew/internal/types"
+	"github.com/karsto/glew/common/types"
 )
 
 // Tenant - the Tenant struct related to db.tenants

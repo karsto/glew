@@ -103,7 +103,7 @@ func GenerateModel(destDir, verticalName string, ctx ModelCtx) (FileContainer, e
 	modelTpl := `package model
 import (
 	"time"
-	"github.com/karsto/glew/internal/types"
+	"github.com/karsto/glew/common/types"
 )
 
 {{.Model}}

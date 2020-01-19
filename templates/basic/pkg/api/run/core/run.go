@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/{{.TODOProjectImportPath}}/pkg/api/config"
+	"{{.TODOProjectImportPath}}/pkg/api/config"
 )
 
 func Run() {

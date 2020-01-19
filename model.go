@@ -200,13 +200,60 @@ func NewStoreCtx(v VerticalMeta, sql SQLStrings) StoreCtx {
 	return out
 }
 
-func GenerateApp(destRoot, appName string, verticals []VerticalMeta) ([]FileContainer, error) {
+func NewModelCtx(v VerticalMeta, sql SQLStrings) (ModelCtx, error) {
+	fields := []SField{}
+	for _, v := range v.Model.Fields {
+		fields = append(fields, SField{
+			Name: v.Name,
+			Type: v.Type.String(),
+			Tags: string(v.Tags),
+		})
+	}
+	model, err := GenerateStruct(v.Name, fields)
+	if err != nil {
+		return ModelCtx{}, err
+	}
+
+	updateFields := []SField{}
+	for _, v := range v.UpdateModel.Fields {
+		updateFields = append(updateFields, SField{
+			Name: v.Name,
+			Type: v.Type.String(),
+			Tags: string(v.Tags),
+		})
+	}
+	updateModel, err := GenerateStruct(fmt.Sprintf("Update%v", v.Name), updateFields)
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	createFields := []SField{}
+	for _, v := range v.CreateModel.Fields {
+		createFields = append(createFields, SField{
+			Name: v.Name,
+			Type: v.Type.String(),
+			Tags: string(v.Tags),
+		})
+	}
+	createModel, err := GenerateStruct(fmt.Sprintf("Create%v", v.Name), createFields)
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	out := ModelCtx{
+		Model:       model,
+		CreateModel: createModel,
+		UpdateModel: updateModel,
+		Utilities:   "",
+	}
+	return out, nil
+}
+
+func GenerateApp(destRoot, appName string, verticals []VerticalMeta, ctx BaseAPPCTX) ([]FileContainer, error) {
 	// copy base
 	destDir := destRoot //  filepath.Join(destRoot, "base-project")
 	cfg := NewConfig()
 	out := []FileContainer{}
 	if cfg.CopyBase {
-		files, err := GenerateBaseApp(destRoot, appName)
+		files, err := GenerateBaseApp(destRoot, appName, ctx)
 		if err != nil {
 			return out, err
 		}
@@ -253,7 +300,10 @@ func GenerateApp(destRoot, appName string, verticals []VerticalMeta) ([]FileCont
 			verticalOut.Controllers = append(verticalOut.Controllers, controllerFile)
 		}
 		if cfg.Models {
-			ctx := ModelCtx{}
+			ctx, err := NewModelCtx(v, sql)
+			if err != nil {
+				return out, err
+			}
 			model, err := GenerateModel(destDir, v.Name, ctx)
 			if err != nil {
 				return out, err

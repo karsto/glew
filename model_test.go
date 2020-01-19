@@ -51,7 +51,10 @@ func TestPlayground(t *testing.T) {
 
 	verticals = append(verticals, vertical)
 
-	files, err := GenerateApp(destDir, "testApp", verticals)
+	ctx := BaseAPPCTX{
+		ImportPath: "github.com/karsto/test",
+	}
+	files, err := GenerateApp(destDir, "testApp", verticals, ctx)
 	if err != nil {
 		spew.Dump(err)
 		panic(err)

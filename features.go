@@ -29,7 +29,7 @@ func GenerateStruct(structName string, fields []SField) (string, error) {
 	}
 
 	listF := func(idx int, cur, res string) string {
-		return fmt.Sprintf("\t%v\n", cur)
+		return fmt.Sprintf("\t\t%v\n", cur)
 	}
 	fieldStr := AggStrList(fields2, listF)
 	fieldStr = strings.Trim(fieldStr, "\n")
@@ -45,7 +45,11 @@ func GenerateStruct(structName string, fields []SField) (string, error) {
 	return content, nil
 }
 
-func GenerateBaseApp(destDir, appName string) ([]FileContainer, error) {
+type BaseAPPCTX struct {
+	ImportPath string
+}
+
+func GenerateBaseApp(destDir, appName string, ctx BaseAPPCTX) ([]FileContainer, error) {
 	files, err := ReadFiles("static", destDir)
 	if err != nil {
 		return files, err
@@ -64,15 +68,20 @@ func GenerateBaseApp(destDir, appName string) ([]FileContainer, error) {
 	// }
 
 	basicCTX := map[string]string{
-		"AppName": appName,
+		"AppName":                      appName,
+		"TODOProjectImportPath":        ctx.ImportPath,
+		"TODODockerRegistry":           "{{.TODODockerRegistry}}",
+		"TODODockerRepo":               "{{.TODODockerRepo}}",
+		"TODOControllersRegistration":  "{{.TODOControllersRegistration}}",
+		"TODOControllersRegistration2": "{{.TODOControllersRegistration2}}",
 	}
 
-	for _, v := range basics {
-		content, err := ExecuteTemplate("bsc:"+destDir+v.FileName, v.Content, basicCTX)
+	for i, v := range basics {
+		content, err := ExecuteTemplate(fmt.Sprintf("bsc: %v", i)+destDir+v.FileName, v.Content, basicCTX)
 		if err != nil {
 			return files, err
 		}
-		v.Content = content
+		basics[i].Content = content
 	}
 	files = append(files, basics...)
 
@@ -80,14 +89,38 @@ func GenerateBaseApp(destDir, appName string) ([]FileContainer, error) {
 }
 
 type ModelCtx struct {
+	Model       string
+	CreateModel string
+	UpdateModel string
+	Utilities   string
 }
 
 func GenerateModel(destDir, verticalName string, ctx ModelCtx) (FileContainer, error) {
 	modelName := strcase.ToSnake(verticalName)
 	modelDest := path.Join(destDir, NewPaths().Model)
 	fileName := fmt.Sprintf("%v.go", modelName)
+
+	modelTpl := `package model
+import (
+	"time"
+	"github.com/karsto/glew/internal/types"
+)
+
+{{.Model}}
+
+{{.CreateModel}}
+
+{{.UpdateModel}}
+
+{{.Utilities}}
+`
+	content, err := ExecuteTemplate("modelFunc", modelTpl, ctx)
+	if err != nil {
+		return FileContainer{}, err
+	}
+
 	out := FileContainer{
-		Content:     "TODO:",
+		Content:     content,
 		Destination: modelDest,
 		FileName:    fileName,
 	}

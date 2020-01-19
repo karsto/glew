@@ -12,6 +12,7 @@ import (
 	"github.com/karsto/glew/internal/sqlutil"
 
 	// DB DRIVER
+	"github.com/jackc/pgx/stdlib"
 	_ "github.com/jackc/pgx/stdlib"
 )
 

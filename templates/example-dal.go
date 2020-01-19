@@ -4,16 +4,18 @@ import (
 	"strings"
 
 	"github.com/karsto/glew/internal/sqlutil"
+		"{{.TODOProjectImportPath}}/pkg/api/model"
 )
 
 func (store *Store) Create{{.ModelNameTitleCase}}(tenantID int, m model.Create{{.ModelNameTitleCase}}) (model.{{.ModelNameTitleCase}}, error) {
 	const insertSql = `{{.SQL.Insert}}`
 
 	args := []interface{}{{"{"}}
+		tenantID,
 {{.CreatePropertiesList}}
 	}
 
-	rows, err := store.db.Query(insertSql, tenantID, args...)
+	rows, err := store.db.Query(insertSql, args...)
 	if err != nil {
 		return model.{{.ModelNameTitleCase}}{}, err
 	}
@@ -84,9 +86,11 @@ func (store *Store) Update{{.ModelNameTitleCase}}(tenantID, id int, m model.Upda
 	const update{{.ModelNameTitleCase}}SQL = `{{.SQL.Put}}`
 
 	args := []interface{}{{"{"}}
+		tenantID,
+		id,
 {{.UpdatePropertiesList}}
 	}
-	_, err := store.db.Exec(update{{.ModelNameTitleCase}}SQL, tenantID, id, args...)
+	_, err := store.db.Exec(update{{.ModelNameTitleCase}}SQL, args...)
 	if err != nil {
 		return model.{{.ModelNameTitleCase}}{}, err
 	}

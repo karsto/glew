@@ -9,7 +9,7 @@ platform:
 
 workspace:
   base: /go
-  path: src/{{.TODOPath}}
+  path: src/{{.TODOProjectImportPath}}
 
 steps:
   - name: build-{{.AppName}}
@@ -23,7 +23,7 @@ steps:
     dockerfile: ./Dockerfile
     settings:
       # repo: {{.TODODockerRegistry}}/{{.TODODockerRepo}}
-      registry: { { .TODODockerRegistry } }
+      # registry: {{ .TODODockerRegistry }}
       auto_tag: true
       # auth: cTSyuuzzDPKyBh63_xza # not actual auth just used to identify app
       # auto_tag_suffix: linux-amd64

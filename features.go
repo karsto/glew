@@ -95,6 +95,22 @@ type ModelCtx struct {
 	Utilities   string
 }
 
+func GeneratePage(structName string) (string, error) {
+	fields := []SField{
+		SField{
+			Name: "Records",
+			Type: fmt.Sprintf("[]%v", structName),
+			Tags: "json:\"records\"",
+		},
+		SField{
+			Name: "Page",
+			Type: "types.PagingInfo",
+			Tags: "json:\"page\"",
+		},
+	}
+	return GenerateStruct(structName+"Page", fields)
+}
+
 func GenerateModel(destDir, verticalName string, ctx ModelCtx) (FileContainer, error) {
 	modelName := strcase.ToSnake(verticalName)
 	modelDest := path.Join(destDir, NewPaths().Model)
@@ -234,7 +250,7 @@ func NewConfig() FeatureConfig {
 
 func GenerateTrim(structName string, stringFieldNames []string) (string, error) {
 	const trimTmpl = `
-	func trim{{.StructName}}(m model.{{.StructName}}) model.{{.StructName}}}{{{ range  $value := .StringFieldNames }}
+	func trim{{.StructName}}(m model.{{.StructName}}) model.{{.StructName}}{{print "{"}}{{ range  $value := .StringFieldNames }}
 		m.{{$value}} = strings.TrimSpace(m.{{$value}}){{ end }}
 		return m
 	}`
@@ -247,6 +263,35 @@ func GenerateTrim(structName string, stringFieldNames []string) (string, error) 
 		return "", err
 	}
 	return trimUtil, nil
+}
+
+func GenerateMapFunc(structName, targetName string, fields []string) (string, error) {
+	// toMapPl := `
+	// `
+	toMapPl := `
+	func (m *{{.StructName}}) To{{.TargetName}}() model.{{.TargetName}} {
+		out := model.{{.TargetName}}{{print "{}"}}
+		{{.MapStatement}}
+		return out
+	}
+	`
+	listf := func(idx int, cur, res string) string {
+		out := fmt.Sprintf("m.%v = out.%v\n", cur, cur)
+		return out
+	}
+	mapStmt := AggStrList(fields, listf)
+	mapStmt = strings.Trim(mapStmt, "\n")
+	ctx := map[string]interface{}{
+		"StructName":   structName,
+		"TargetName":   targetName,
+		"MapStatement": mapStmt,
+	}
+	initFunc, err := ExecuteTemplate("toMapPl", toMapPl, ctx)
+	if err != nil {
+		return "", err
+	}
+	return initFunc, nil
+
 }
 
 // nilstatements[fieldname]newStatement
@@ -438,6 +483,29 @@ type DBTypeCtx struct {
 	Default    string
 	IsPK       bool
 	IsNullable bool
+}
+
+func GetCommon(left, right []GoType) []string {
+	common := map[string]bool{}
+	for _, v := range left {
+		common[v.Name] = false
+	}
+
+	for _, v := range right {
+		if _, found := common[v.Name]; found {
+			common[v.Name] = true
+		} else {
+			common[v.Name] = false
+		}
+	}
+
+	out := []string{}
+	for k, v := range common {
+		if v {
+			out = append(out, k)
+		}
+	}
+	return out
 }
 
 func GenerateCreateStatement(t DBTypeCtx) string {

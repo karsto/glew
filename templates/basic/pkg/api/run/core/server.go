@@ -16,23 +16,23 @@ import (
 func GetControllers(cfg *config.Core) ([]extgin.Registerer, error) {
 	store := store.NewStore(cfg.DBConfig)
 
-	controllers := []extgin.Registerer{
+	registered := []extgin.Registerer{
 		controllers.NewTenantController(store),
 		{{.TODOControllersRegistration}}
 	}
-	return controllers, nil
+	return registered, nil
 }
 
 func NewServer(cfg *config.Core) (*http.Server, error) {
 	s := extgin.NewStd()
 
 	base := s.Group("/api")
-	controllers, err := GetControllers(cfg)
+	registered, err := GetControllers(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, v := range controllers {
+	for _, v := range registered {
 		v.Register(base)
 	}
 	binding.Validator = new(validation.DefaultValidator)

@@ -201,6 +201,26 @@ func NewStoreCtx(v VerticalMeta, sql SQLStrings, baseCtx BaseAPPCTX) StoreCtx {
 	return out
 }
 
+func GetStringFields(fields []GoType) []string {
+	out := []string{}
+	for _, v := range fields {
+		if v.IsString() {
+			out = append(out, v.Name)
+		}
+	}
+	return out
+}
+
+func GetNilableFields(fields []GoType) map[string]string {
+	out := map[string]string{}
+	for _, v := range fields {
+		if v.IsNillable() {
+			out[v.Name] = v.GetNewStatement()
+		}
+	}
+	return out
+}
+
 func NewModelCtx(v VerticalMeta, sql SQLStrings) (ModelCtx, error) {
 	fields := []SField{}
 	for _, v := range v.Model.Fields {
@@ -210,7 +230,8 @@ func NewModelCtx(v VerticalMeta, sql SQLStrings) (ModelCtx, error) {
 			Tags: string(v.Tags),
 		})
 	}
-	model, err := GenerateStruct(v.Name, fields)
+	mName := v.Name
+	model, err := GenerateStruct(mName, fields)
 	if err != nil {
 		return ModelCtx{}, err
 	}
@@ -223,7 +244,8 @@ func NewModelCtx(v VerticalMeta, sql SQLStrings) (ModelCtx, error) {
 			Tags: string(v.Tags),
 		})
 	}
-	updateModel, err := GenerateStruct(fmt.Sprintf("Update%v", v.Name), updateFields)
+	updateName := fmt.Sprintf("Update%v", v.Name)
+	updateModel, err := GenerateStruct(updateName, updateFields)
 	if err != nil {
 		return ModelCtx{}, err
 	}
@@ -235,15 +257,85 @@ func NewModelCtx(v VerticalMeta, sql SQLStrings) (ModelCtx, error) {
 			Tags: string(v.Tags),
 		})
 	}
-	createModel, err := GenerateStruct(fmt.Sprintf("Create%v", v.Name), createFields)
+	createName := fmt.Sprintf("Create%v", v.Name)
+	createModel, err := GenerateStruct(createName, createFields)
 	if err != nil {
 		return ModelCtx{}, err
 	}
+	utilities := ""
+	page, err := GeneratePage(v.Name)
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	mTrim, err := GenerateTrim(mName, GetStringFields(v.Model.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	updateTrim, err := GenerateTrim(updateName, GetStringFields(v.UpdateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	createTrim, err := GenerateTrim(createName, GetStringFields(v.CreateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	mNil, err := GenerateInit(mName, GetNilableFields(v.Model.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	updateNil, err := GenerateInit(updateName, GetNilableFields(v.UpdateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	createNil, err := GenerateInit(createName, GetNilableFields(v.CreateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	toUpdate, err := GenerateMapFunc(mName, updateName, GetCommon(v.Model.Fields, v.UpdateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	toCreate, err := GenerateMapFunc(mName, createName, GetCommon(v.Model.Fields, v.CreateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+
+	uToModel, err := GenerateMapFunc(updateName, mName, GetCommon(v.Model.Fields, v.UpdateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	uToCreate, err := GenerateMapFunc(updateName, createName, GetCommon(v.Model.Fields, v.CreateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+
+	cToModel, err := GenerateMapFunc(createName, mName, GetCommon(v.Model.Fields, v.CreateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	cToUpdate, err := GenerateMapFunc(createName, updateName, GetCommon(v.Model.Fields, v.UpdateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+
+	utilities = utilities + page + "\n"
+	utilities = utilities + toUpdate + "\n"
+	utilities = utilities + toCreate + "\n"
+	utilities = utilities + uToModel + "\n"
+	utilities = utilities + uToCreate + "\n"
+	utilities = utilities + cToModel + "\n"
+	utilities = utilities + cToUpdate + "\n"
+	utilities = utilities + mTrim + "\n"
+	utilities = utilities + mNil + "\n"
+	utilities = utilities + updateTrim + "\n"
+	utilities = utilities + updateNil + "\n"
+	utilities = utilities + createTrim + "\n"
+	utilities = utilities + createNil + "\n"
 	out := ModelCtx{
 		Model:       model,
 		CreateModel: createModel,
 		UpdateModel: updateModel,
-		Utilities:   "",
+		Utilities:   utilities,
 	}
 	return out, nil
 }

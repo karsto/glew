@@ -13,7 +13,7 @@ import (
 )
 
 func GetControllers(cfg *config.All) ([]extgin.Registerer, error) {
-	controllers := []extgin.Registerer{
+	registered := []extgin.Registerer{
 		{{.TODOControllersRegistration2}}
 	}
 
@@ -21,21 +21,21 @@ func GetControllers(cfg *config.All) ([]extgin.Registerer, error) {
 	if err != nil {
 		return nil, err
 	}
-	controllers = append(controllers, coreControllers...)
+	registered = append(registered, coreControllers...)
 
-	return controllers, nil
+	return registered, nil
 }
 
 func NewServer(cfg *config.All) (*http.Server, error) {
 	s := extgin.NewStd()
 
-	controllers, err := GetControllers(cfg)
+	registered, err := GetControllers(cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	base := s.Group("/api")
-	for _, v := range controllers {
+	for _, v := range registered {
 		v.Register(base)
 	}
 

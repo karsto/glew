@@ -16,17 +16,29 @@ type GoType struct {
 	Tags reflect.StructTag
 }
 
+func (t *GoType) GetKey() string {
+	out := t.Name + " " + t.Type.Name() + " " + string(t.Tags)
+	return out
+}
+
 func (t *GoType) GetNewStatement() string {
 	out := t.Type.Name() + "{}"
 	return out
 }
 
 func (t *GoType) IsNillable() bool {
-	return false // TODO:
+	switch t.Type.String() {
+
+	case "int", "string", "bool", "Time", "time.Time":
+		// TODO: better way to do this
+		// TODO: time fields
+		return false
+	}
+	return true
 }
 
 func (t *GoType) IsString() bool {
-	return false // TODO:
+	return t.Type.String() == "string"
 }
 
 type SQLStrings struct {

@@ -5,7 +5,11 @@ import (
 	"net/http"
 	"github.com/a8m/rql"
 	extgin "github.com/karsto/glew/internal/ext-gin"
+	"github.com/karsto/glew/internal/types"
 	"github.com/gin-gonic/gin"
+	"{{.TODOProjectImportPath}}/internal/session"
+	"{{.TODOProjectImportPath}}/pkg/api/store"
+	"{{.TODOProjectImportPath}}/pkg/api/model"
 )
 
 type {{.ModelNameTitleCase}}Controller struct {

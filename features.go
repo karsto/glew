@@ -129,6 +129,7 @@ import (
 }
 
 type StoreCtx struct {
+	TODOProjectImportPath    string
 	TableName                string
 	ModelNameTitleCase       string
 	ModelNamePluralTitleCase string
@@ -163,7 +164,7 @@ func GenerateStoreFile(destDir, verticalName string, ctx StoreCtx) (FileContaine
 
 var pluralizer = pluralize.NewClient() // save the bitsy
 
-func NewControllerCtx(verticalName string) ControllerCtx {
+func NewControllerCtx(verticalName string, baseCTX BaseAPPCTX) ControllerCtx {
 	pluralName := pluralizer.Plural(verticalName)
 	out := ControllerCtx{
 		ModelNameTitleCase:       strcase.ToCamel(verticalName),
@@ -172,6 +173,7 @@ func NewControllerCtx(verticalName string) ControllerCtx {
 		ModelNameDocs:            strcase.ToDelimited(verticalName, ' '),
 		ModelIdFieldName:         "id",
 		Route:                    strcase.ToKebab(verticalName),
+		TODOProjectImportPath:    baseCTX.ImportPath,
 	}
 	return out
 }
@@ -183,6 +185,7 @@ type ControllerCtx struct {
 	ModelNameDocs            string
 	ModelIdFieldName         string
 	Route                    string
+	TODOProjectImportPath    string
 }
 
 // returns Controller name, content, error

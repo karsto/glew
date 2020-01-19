@@ -168,7 +168,7 @@ func NewSQLCtx(vertical VerticalMeta) SQLCtx {
 	return out
 }
 
-func NewStoreCtx(v VerticalMeta, sql SQLStrings) StoreCtx {
+func NewStoreCtx(v VerticalMeta, sql SQLStrings, baseCtx BaseAPPCTX) StoreCtx {
 	tableName := strcase.ToSnake(v.Name)
 	modelNameTitleCase := strcase.ToCamel(v.Name)
 
@@ -190,6 +190,7 @@ func NewStoreCtx(v VerticalMeta, sql SQLStrings) StoreCtx {
 	modelNamePluralTitleCase := pluralizer.Plural(modelNameTitleCase)
 
 	out := StoreCtx{
+		TODOProjectImportPath:    baseCtx.ImportPath,
 		ModelNameTitleCase:       modelNameTitleCase,
 		ModelNamePluralTitleCase: modelNamePluralTitleCase,
 		TableName:                tableName,
@@ -247,13 +248,13 @@ func NewModelCtx(v VerticalMeta, sql SQLStrings) (ModelCtx, error) {
 	return out, nil
 }
 
-func GenerateApp(destRoot, appName string, verticals []VerticalMeta, ctx BaseAPPCTX) ([]FileContainer, error) {
+func GenerateApp(destRoot, appName string, verticals []VerticalMeta, baseCtx BaseAPPCTX) ([]FileContainer, error) {
 	// copy base
 	destDir := destRoot //  filepath.Join(destRoot, "base-project")
 	cfg := NewConfig()
 	out := []FileContainer{}
 	if cfg.CopyBase {
-		files, err := GenerateBaseApp(destRoot, appName, ctx)
+		files, err := GenerateBaseApp(destRoot, appName, baseCtx)
 		if err != nil {
 			return out, err
 		}
@@ -274,7 +275,7 @@ func GenerateApp(destRoot, appName string, verticals []VerticalMeta, ctx BaseAPP
 		verticalOut.SQL = sql
 
 		if cfg.Store {
-			ctx := NewStoreCtx(v, sql)
+			ctx := NewStoreCtx(v, sql, baseCtx)
 			storeFile, err := GenerateStoreFile(destDir, v.Name, ctx)
 			if err != nil {
 				return out, err

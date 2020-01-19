@@ -52,7 +52,9 @@ Planned "Features":
 * CRUD `.js` api web client
 * CRUD `.MD` doc generation
 * Model `.sql` insert dummy data statements
-* Patch Batch singled field update endpoint
+* Patch Batch singled field update endpoint for multi endpoints
+  * patch send dictionary in map, allow multi param like delete
+  * patch collection map[id][]patches with specific field updates
 * PUT ETag version verification
 * Support alt id type (string/uuid)
 * UI CRUD Data store
@@ -119,3 +121,60 @@ These are the primary dependencies and what they are responsible for:
 * `./internal` - internal libraries and extension utilities for 3rd party libraries.
 * `./pkg` - the applications relevant to the platform
   * `/apis` - all of the apis (core)
+
+## Getting Started
+
+Run the following application and then look at the output folder. You will find a new ready to run app, see `README.MD` for next steps.
+
+```golang
+type TestModel struct {
+	StringField string    `db:"string_field" json:"stringField"`
+	NumField    int       `db:"num_field" json:"numField"`
+	ID          int       `db:"id" json:"id"`
+	Code        string    `db:"code" json:"code"`
+	TimeField   time.Time `db:"time_field" json:"timeField"`
+}
+type CreateTestModel struct {
+	StringField string    `db:"string_field" json:"stringField"`
+	NumField    int       `db:"num_field" json:"numField"`
+	ID          int       `db:"id" json:"id"`
+	Code        string    `db:"code" json:"code"`
+	TimeField   time.Time `db:"time_field" json:"timeField"`
+}
+type UpdateTestModel struct {
+	StringField string    `db:"string_field" json:"stringField"`
+	NumField    int       `db:"num_field" json:"numField"`
+	ID          int       `db:"id" json:"id"`
+	Code        string    `db:"code" json:"code"`
+	TimeField   time.Time `db:"time_field" json:"timeField"`
+}
+
+func main() {
+    // TODO: set your destination directory
+	destDir := "out"
+	verticals := []VerticalMeta{}
+    appName:= "testApp"
+
+	vertical, err := GenerateVertical(TestModel{}, "TestVertical", CreateTestModel{}, UpdateTestModel{})
+	if err != nil {
+		spew.Dump(err)
+		panic(err)
+	}
+
+	verticals = append(verticals, vertical)
+	ctx := BaseAPPCTX{
+		ImportPath: "{{.TODOYourImportPath}}", // TODO: set your import path for the project to be generated ie github.com/karsto/test
+	}
+	files, err := GenerateApp(destDir, appName, verticals, ctx)
+	if err != nil {
+		spew.Dump(err)
+		panic(err)
+	}
+	err = WriteFiles(files)
+	if err != nil {
+		spew.Dump(err)
+		panic(err)
+    }
+
+    // TODO: ./out now has starter application with controllers and dal for given features. See README.md for next steps.
+```

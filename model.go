@@ -293,7 +293,7 @@ func GenerateApp(destRoot, appName string, verticals []VerticalMeta, baseCtx Bas
 		}
 
 		if cfg.Controllers {
-			ctx := NewControllerCtx(v.Name)
+			ctx := NewControllerCtx(v.Name, baseCtx)
 			controllerFile, err := GenerateControllerFile(destDir, v.Name, ctx)
 			if err != nil {
 				return out, err

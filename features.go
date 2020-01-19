@@ -45,6 +45,68 @@ func GenerateStruct(structName string, fields []SField) (string, error) {
 	return content, nil
 }
 
+/* TODO: router template
+PluralModelName
+ResourceName
+TitleCaseModelName
+*/
+
+/* TODO: New Template
+FieldRules
+FieldType
+FieldLabel
+FieldPlaceHolder
+JSONFieldName
+JSONDefault
+ResourceRoute
+
+TitleCaseModelName
+CamelCaseModelName
+CamelCasePluralModelName
+TitleCaseModelPluralName
+FormMapStatment // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
+FormDefaultStatement // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
+*/
+
+/* TODO: List Template
+FieldRule
+FieldName
+FieldLabel
+FieldType
+ColModifers
+
+TitleCaseModelName
+CamelCaseModelName
+ModelNamePluralTitleCase
+CamelCasePlural
+
+// TODO: search statement is the following
+      // TODO: for each number field
+      if (this.search.{{.NumField}} && this.search.{{.NumField}} > 0) {
+        filter.$or.push({ {{.NumField}}: this.search.{{.NumField}} });
+      }
+      // TODO: for each text field
+
+      if (this.search.{{.StringField}} && this.search.{{.StringField}}.length > 0) {
+        let {{.StringField}} = this.search.{{.StringField}};
+        filter.$or.push(
+          // {
+            {{.StringField}}:{$like:`%${ {{.StringField}}}%`}},
+        );
+	  }
+
+ResourceRoute
+FormDefaultStatement //   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
+COLOverrideStatement //   {{.FieldName}}:"{{.field_colName}}", // TODO
+*/
+
+type TestCTX struct {
+	ImportPath               string
+	ModelNameTitleCase       string
+	ModelNamePluralTitleCase string
+	ModelNamePluralCamel     string
+	DefaultFieldStatement    string // TODO: {{.FieldGOName}}: {{.TODOStringOrINToRGODefault}},
+}
 type BaseAPPCTX struct {
 	ImportPath string
 }
@@ -55,17 +117,10 @@ func GenerateBaseApp(destDir, appName string, ctx BaseAPPCTX) ([]FileContainer, 
 		return files, err
 	}
 
-	// for _, v := range files {
-	// v.Destination = strings.Trim(v.Destination, "static")
-	// }
-
 	basics, err := ReadFiles("templates/basic", destDir)
 	if err != nil {
 		return files, err
 	}
-	// for _, v := range basics {
-	// v.Destination = strings.Trim(v.Destination, "templates/basic")
-	// }
 
 	basicCTX := map[string]string{
 		"AppName":                      appName,

@@ -14,7 +14,7 @@
                 :message="errors"
               >
               <!-- TODO: is .number or similar needed on v-model?  -->
-                <b-input type="{{.FieldType}}" :value="null" placeholder="{{.FieldLabel}}" v-model="search.{{.FieldJSONName}}"></b-input>
+                <b-input type="{{.FieldType}}" :value="null" placeholder="{{.FieldLabel}}" v-model="search.{{.FieldName}}"></b-input>
               </b-field>
             </ValidationProvider>
 
@@ -67,7 +67,7 @@
     <b-table
       ref="zeTable"
       :loading="loading"
-      :data="{{.LowerCaseModelName}}TableData"
+      :data="{{.CamelCaseModelName}}TableData"
       :striped="true"
       :hoverable="true"
       :mobile-cards="true"
@@ -102,21 +102,21 @@
         // TODO: if ID
         <b-table-column field="id" label="ID" width="40" numeric sortable>
           <router-link
-            :to="{ name: 'edit{{.ModelTitleCaseName}}', params: { id:props.row.id, model: props.row }}"
+            :to="{ name: 'edit{{.TitleCaseModelName}}', params: { id:props.row.id, model: props.row }}"
           >{{ props.row.id}}</router-link>
         </b-table-column>
         <b-table-column
-          field="{{.JSONFIELDNAME}}"
+          field="{{.FieldName}}"
           label="{{.FieldLabel}}"
           {{.ColModifers}}
-        >{{ props.row.{{.JSONFIELDNAME}} }}</b-table-column>
+        >{{ props.row.{{.FieldName}} }}</b-table-column>
 
         <b-table-column label="Edit">
-          <router-link :to="{ name: 'edit{{.ModelTitleCaseName}}', params: { id:props.row.id, model: props.row }}">
+          <router-link :to="{ name: 'edit{{.TitleCaseModelName}}', params: { id:props.row.id, model: props.row }}">
             <b-icon icon="edit" size="is-small"></b-icon>
           </router-link>
 
-          <b-icon icon="minus-circle" size="is-small" @click.native="onDelete{{.ModelTitleCaseName}}(props.row)"></b-icon>
+          <b-icon icon="minus-circle" size="is-small" @click.native="onDelete{{.TitleCaseModelName}}(props.row)"></b-icon>
         </b-table-column>
       </template>
 
@@ -126,7 +126,7 @@
             <p>
               <b-icon icon="frown" size="is-medium"></b-icon>
             </p>
-            <p>No {{.PluralName}}.</p>
+            <p>No {{.ModelNamePluralTitleCase}}.</p>
           </div>
         </section>
       </template>
@@ -134,17 +134,17 @@
       <template slot="footer"></template>
       <template slot="bottom-left">
         <b>Total checked</b>
-        : {{ toDelete{{.PluralTitleCase}}Arr.length }}
+        : {{ toDelete{{.ModelNamePluralTitleCase}}Arr.length }}
         <b-button
           icon-left="trash"
-          v-if="toDelete{{.PluralTitleCase}}Arr.length >0"
+          v-if="toDelete{{.ModelNamePluralTitleCase}}Arr.length >0"
           class="button is-small is-danger"
           @click="confirmMultiDelete()"
         >Delete Checked</b-button>
         <b-button
           class="button is-small is-info"
-          v-if="toDelete{{.PluralTitleCase}}Arr.length >0"
-          @click="clearToDelete{{.PluralTitleCase}}Arr"
+          v-if="toDelete{{.ModelNamePluralTitleCase}}Arr.length >0"
+          @click="clearToDelete{{.ModelNamePluralTitleCase}}Arr"
         >Clear Checked</b-button>
       </template>
     </b-table>
@@ -172,12 +172,12 @@ let pageInfoDefaults = {
 };
 
 const colOverride = {
-  {{.fieldJsonName}}:"{{.field_colName}}",
+  {{.COLOverrideStatement}}
 };
 let pgMixin = pageMixinBuilder(pageInfoDefaults, "fetchListData", colOverride);
 
 let multiDeleteMixin = multiDeleteMixinBuilder(
-  '{{.ResourceLabel}}',
+  '{{.ResourceRoute}}',
   '/api/{{.ResourceRoute}}/',
   '{{.ResourceRoute}}',
   'fetchListData',
@@ -187,7 +187,6 @@ let multiDeleteMixin = multiDeleteMixinBuilder(
 
 let formDefaults = {
   {{.FormDefaultStatement}}
-  {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
 }
 
 let formMixin = formMixinBuilder(formDefaults, "search", "fetchListData");
@@ -235,32 +234,20 @@ export default {
       {{.CamelCasePlural}}: "list",
       loading: "isLoading"
     }),
-    {{.LowerCaseModelName}}TableData() {
+    {{.CamelCaseModelName}}TableData() {
       return this.{{.CamelCasePlural}}.map(x => {
         return { ...x };
       });
     },
     deleteMsgObjectsLabel() {
-      let objStr = this.toDelete{{.TitleCasePluralModelName}}Arr.map(x => merge({}, x));
-      return this.get{{.TitleCasePluralModelName}}DeleteMsg(objStr);
+      let objStr = this.toDelete{{.ModelNamePluralTitleCase}}Arr.map(x => merge({}, x));
+      return this.get{{.ModelNamePluralTitleCase}}DeleteMsg(objStr);
     },
     paramsSearch() {
       let filter = {
         $or: []
       };
-      // TODO: for each number field
-      if (this.search.{{.NumField}} && this.search.{{.NumField}} > 0) {
-        filter.$or.push({ {{.NumField}}: this.search.{{.NumField}} });
-      }
-      // TODO: for each text field
-
-      if (this.search.{{.StringField}} && this.search.{{.StringField}}.length > 0) {
-        let {{.StringField}} = this.search.{{.StringField}};
-        filter.$or.push(
-          // {
-            {{.StringField}}:{$like:`%${ {{.StringField}}}%`}},
-        );
-      }
+      {{.SearchStatement}}
 
 
       if (!this.isSearchSubmitted || (filter && filter.length === 0)) {
@@ -279,7 +266,7 @@ export default {
     }
   },
   methods: {
-    get{{.TitleCasePluralModelName}}DeleteMsg(objSlice) {
+    get{{.ModelNamePluralTitleCase}}DeleteMsg(objSlice) {
       objSlice = objSlice
         .slice(0, 5)
         .map(x => `<li>Id: ${x.id} - ${x.displayName}</li>`); // TODO: ID: vs Id:
@@ -288,9 +275,9 @@ export default {
 
       return objSlice;
     },
-    async onDelete{{.ModelTitleCaseName}}(toDelete) {
-      let toDelete{{.TitleCasePluralModelName}}Arr = [toDelete];
-      let msg = this.get{{.TitleCasePluralModelName}}DeleteMsg(toDelete{{.TitleCasePluralModelName}}Arr);
+    async onDelete{{.TitleCaseModelName}}(toDelete) {
+      let toDelete{{.ModelNamePluralTitleCase}}Arr = [toDelete];
+      let msg = this.get{{.ModelNamePluralTitleCase}}DeleteMsg(toDelete{{.ModelNamePluralTitleCase}}Arr);
       msg = this.getDeleteMsg(false, msg);
       return this.singleDelete(toDelete, msg);
     },
@@ -304,15 +291,15 @@ export default {
       this.setSearchFromQuery(query);
       this.setPageInfoFromQuery(query, true, undefined);
     },
-    ...mapActions("{{.lowerTitleCasePlural}}", {
-      fetch{{.TitleCasePluralModelName}}: "fetchList"
+    ...mapActions("{{.CamelCasePlural}}", {
+      fetch{{.ModelNamePluralTitleCase}}: "fetchList"
     }),
     async fetchListData() {
       try {
         const config = {
           params: this.params
         };
-        let response = await this.fetch{{.TitleCasePluralModelName}}({
+        let response = await this.fetch{{.ModelNamePluralTitleCase}}({
           config: config
         });
         let pageInfo = this.pageToPageInfo(response.page);

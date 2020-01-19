@@ -40,7 +40,7 @@ func (s *{{.ModelNameTitleCase}}Suite) teardown(t *testing.T) {}
 
 func (s *{{.ModelNameTitleCase}}Suite) getNewModel() *model.{{.ModelNameTitleCase}} {
 	return &model.{{.ModelNameTitleCase}}{
-		{{.FieldGOName}}:{{.TODOStringOrINToRGODefault}}
+		{{.DefaultFieldStatement}}
 	}
 }
 
@@ -52,14 +52,14 @@ func (s *{{.ModelNameTitleCase}}Suite) testCreate(t *testing.T) {
 func (s *{{.ModelNameTitleCase}}Suite) testList(t *testing.T) {
 	t.Parallel()
 	created := s.createdAndValidate(t)
-	res, err := GlobalClient.R().SetResult(model.{{.PluralTitleCaseModelName}}Page{}).Get(s.resourcePath)
+	res, err := GlobalClient.R().SetResult(model.{{.ModelNamePluralTitleCase}}Page{}).Get(s.resourcePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if res.StatusCode() != http.StatusOK {
 		t.Fatalf("expected %v status code found %v msg: %v ", http.StatusCreated, res.StatusCode(), res.Status())
 	}
-	page, success := res.Result().(*model.{{.PluralTitleCaseModelName}}Page)
+	page, success := res.Result().(*model.{{.ModelNamePluralTitleCase}}Page)
 	if !success {
 		t.Fatal(fmt.Sprintf("unable to type assert %s page type for array", s.name))
 	}
@@ -172,6 +172,6 @@ func (s *{{.ModelNameTitleCase}}Suite) createdAndValidate(t *testing.T) model.{{
 func (s *{{.ModelNameTitleCase}}Suite) updateModel(t *testing.T, m model.{{.ModelNameTitleCase}}) *model.{{.ModelNameTitleCase}} {
 	// TODO:
 	return &model.{{.ModelNameTitleCase}}{
-		{{.FieldGOName}}:{{.TODOStringOrINToRGODefault}}
+		{{.DefaultFieldStatement}}
 	}
 }

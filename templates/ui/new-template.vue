@@ -10,7 +10,7 @@
           // {{.FieldRules}} ex : "min_value:1|numeric / min_value:0|numeric|required/ alpha_dash|required alpha_spaces
           // {{.FieldType}} ex: number
 
-            <ValidationProvider rules="{{.FieldRules}}" name="{{.FieldName}}">
+            <ValidationProvider rules="{{.FieldRules}}" name="{{.JSONFieldName}}">
               <b-field
                 v-if="isEditMode"
                 slot-scope="{ errors, valid }"
@@ -22,8 +22,8 @@
                 <b-input
                   type="{{.FieldType}}"
                   :value="null"
-                  placeholder="{{.humanPlaceHolder}}"
-                  v-model="form.{{.fieldName}}"
+                  placeholder="{{.FieldPlaceHolder}}"
+                  v-model="form.{{.JSONFieldName}}"
                   readonly
                 ></b-input>
               </b-field>
@@ -34,7 +34,7 @@
             type="button"
             icon-left="backward"
             class="button is-small is-success"
-            @click="$router.push({ name: '{{.ModelNameRoute}}' }).catch(()=>{})"
+            @click="$router.push({ name: '{{.ResourceRoute}}' }).catch(()=>{})"
             :loading="false"
           >Back</b-button>
           <b-button
@@ -81,7 +81,6 @@ import isEqual from 'lodash.isequal'
 import merge from 'lodash.merge'
 
 const form = {
-  {{.JSONFieldName}}:'{{.JSONFieldName}}',
   {{.FormMapStatment}}
 }
 
@@ -99,7 +98,7 @@ let formMixin = formMixinBuilder(
 )
 
 let multiDeleteMixin = multiDeleteMixinBuilder(
-  '{{.ResourceLabel}}',
+  '{{.ResourceRoute}}',
   '/api/{{.ResourceRoute}}/',
   '{{.ResourceRoute}}',
   'deleteCallback',
@@ -111,7 +110,7 @@ export default {
   mixins: [
     formMixin,
     foldersAutoCompleteMixin,
-    {{.LowerCaseModelName}}TypesAutoCompleteMixin,
+    {{.CamelCaseModelName}}TypesAutoCompleteMixin,
     multiDeleteMixin
   ],
   beforeRouteEnter (to, from, next) {
@@ -130,7 +129,7 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('{{.PluralModelName}}', {
+    ...mapGetters('{{.CamelCasePluralModelName}}', {
       loading: 'isLoading'
     }),
     ifReset () {
@@ -154,7 +153,7 @@ export default {
         this.onSubmitForm()
       }
     },
-    ...mapActions('{{.PluralModelName}}', {
+    ...mapActions('{{.CamelCasePluralModelName}}', {
       fetch{{.TitleCaseModelName}}: 'fetchSingle',
       create{{.TitleCaseModelName}}: 'create',
       update{{.TitleCaseModelName}}: 'replace'
@@ -175,7 +174,7 @@ export default {
       return this.singleDelete(toDelete, msg)
     },
     deleteCallback () {
-      this.$router.push({ name: '{{.LowerCaseModelName}}' })
+      this.$router.push({ name: '{{.ResourceRoute}}' })
     },
     async load{{.TitleCaseModelName}} (idOverride) {
       let response = {}
@@ -193,14 +192,14 @@ export default {
         this.validationSubmission = 0
       } catch (err) {
         if (err && err.response && err.response.status === 404) {
-          this.$router.push({ name: '{{.LowerCaseModelName}}' }).catch(() => {})
+          this.$router.push({ name: '{{.ResourceRoute}}' }).catch(() => {})
           return
         }
         parseError(err)
       } finally {
       }
     },
-    async createOrUpdate{{.ModelTitleCase}} () {
+    async createOrUpdate{{.TitleCaseModelName}} () {
       try {
         const config = {}
         const data = this.getForm()
@@ -208,22 +207,22 @@ export default {
         let response = {}
         if (this.isEditMode) {
           const id = this.editId
-          let response = await this.update{{.ModelTitleCase}}({
+          let response = await this.update{{.TitleCaseModelName}}({
             id: id,
             data: data,
             config: config
           })
         } else {
-          let response = await this.create{{.ModelTitleCase}}({
+          let response = await this.create{{.TitleCaseModelName}}({
             data: data,
             config: config
           })
         }
         this.$buefy.toast.open({
-          message: this.isEditMode ? '{{.ModelTitleCase}} Updated!' : '{{.ModelTitleCase}} Created!',
+          message: this.isEditMode ? '{{.TitleCaseModelName}} Updated!' : '{{.TitleCaseModelName}} Created!',
           type: 'is-success'
         })
-        this.$router.push({ name: '{{.LowerCaseModelName}}' }).catch(() => {})
+        this.$router.push({ name: '{{.ResourceRoute}}' }).catch(() => {})
       } catch (err) {
         parseError(err)
       }
@@ -232,7 +231,7 @@ export default {
   mounted () {},
   async created () {
     if (this.isEditMode) {
-      await this.load{{.ModelTitleCase}}()
+      await this.load{{.TitleCaseModelName}}()
     }
   }
 }

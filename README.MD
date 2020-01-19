@@ -5,7 +5,6 @@
 
 The basic functionality out of the box:
 
-
 * Complete golang runtime with an API.
 * Complex multi app cli pattern boiler plate.
   * Includes db creator + initializer wrapper.
@@ -104,12 +103,18 @@ These are the primary dependencies and what they are responsible for:
 | [ladon](https://github.com/ory/ladon)                   |      authorization       |
 | [authboss](https://github.com/volatiletech/authboss)    |      authentication      |
 | [vue.js](https://github.com/go-playground/validator)    |    base ui framework     |
-| [vue-router](https://github.com/vuejs/vue-router)       |    router                |
-| [vuex](https://github.com/vuejs/vuex)                   |    state store           |
+| [vue-router](https://github.com/vuejs/vue-router)       |    ui router                |
+|[vee-validate](https://github.com/logaretm/vee-validate)| ui inline validation |
+| [vuex](https://github.com/vuejs/vuex)                   |    ui state store           |
 | [bulma](https://bulma.io/)                              |    base css framework    |
 | [buefy](https://buefy.org/)                             | buefy + bulma components |
 
-## CLI Structure
+## Limitations
+
+* Doesn't handle complex types - it just handles the basic stuff and will begin to break currently when you go outside of that.
+* Doesn't handle relationships - its just a "code printer". It knows basic things about fields and basic types (See #1) because thats easy. Exception: features should be loaded into the app generator with dependencies ordered first. This is simply because the database create scripts will need to be reordered otherwise.
+
+## CLI Output Structure
 
 * `./` - all the dev tool ([drone](https://drone.io/), [go modules](https://blog.golang.org/using-go-modules), configs and main.go
 * `./cmd` - the cli commands.

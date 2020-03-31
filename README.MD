@@ -20,6 +20,7 @@ The basic functionality out of the box:
 * Includes 'internal' utilities useful for developing apps.
 * Includes `drone.yml` initial build template.
 * Includes `docker-compose.yml` starter for local dev.
+* Includes `Dockerfile` starter for local dev.
 * Includes `.gitignore` and basic `Makefile`.
 * All code supports a tenant id and enforces this very explicitly.
 * All apps configured through env variables.
@@ -40,48 +41,6 @@ For each model set provided a "feature" will be created. Each Feature has the fo
   * Model string trimmer.
   * Inter model mapping.
 * All code is tenant aware.
-
-Planned "Features":
-
-* ETags aka web cache
-* DAL Cache CompositePattern wrapping other Dal NewCache(*dal)..
-* DAL interface + empty implementation generation
-* CRUD `.go` tests
-* CRUD `.go` api web client
-* CRUD `.js` api web client
-* CRUD `.MD` doc generation
-* Model `.sql` insert dummy data statements
-* Patch Batch singled field update endpoint for multi endpoints
-  * patch send dictionary in map, allow multi param like delete
-  * patch collection map[id][]patches with specific field updates
-* PUT ETag version verification
-* Support alt id type (string/uuid)
-* UI CRUD Data store
-* UI CRUD List Page
-* UI CRUD Form Page
-* UI CRUD Routing
-* UI CRUD Testing
-
-Planned Base features:
-
-* UI CRUD
-* Generic Cache interface
-* Rate limiting
-* Tenants CRUD API
-* Optional/Alternative Tenant implementation
-* Authentication api with multi bioler plate enabled
-* auth,auth authboss, ladon, hydra
-* user sign up portal + subscriptions
-* search endpoints included in swagger documentation
-* email templates
-* notifications
-* Metrics/Monitoring
-* terrafrom templates for 'basic' aws
-
-Glew TODO:
-
-* better documentation
-* cli - would like to target .go files
 
 ## Library Choices
 

@@ -1,7 +1,7 @@
 # glew
 [![time tracker](https://wakatime.com/badge/github/karsto/glew.svg)](https://wakatime.com/badge/github/karsto/glew)
 
-`glew` is a raw, rapid prototyping and development tool, used to create starter web boiler-plate projects with CRUD+ functionality. The goal is to be able to create a set of convention following models, feed it to glew, and have developer friendly flexible starter code ready produced. Its basically a glorified project template that makes some assumptions and 3rd party library choices to provide more functionality.
+`glew` is a raw, rapid prototyping and development tool, used to create starter web boiler-plate projects with CRUD+ functionality. The goal is to be able to create a set of convention following models, feed it to glew, and have developer friendly flexible starter code ready produced. Its basically a glorified project template that makes some assumptions and 3rd party library choices to provide more functionality. It's designed to be a best practices basic starting point REST api generator.
 
 The basic functionality out of the box:
 

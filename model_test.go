@@ -3,8 +3,6 @@ package glew
 import (
 	"testing"
 	"time"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func assertEqual(t *testing.T, a interface{}, b interface{}) {
@@ -45,7 +43,6 @@ func TestPlayground(t *testing.T) {
 
 	vertical, err := GenerateVertical(TestModel{}, "TestVertical", CreateTestModel{}, UpdateTestModel{})
 	if err != nil {
-		spew.Dump(err)
 		panic(err)
 	}
 
@@ -56,12 +53,10 @@ func TestPlayground(t *testing.T) {
 	}
 	files, err := GenerateApp(destDir, "testApp", verticals, ctx)
 	if err != nil {
-		spew.Dump(err)
 		panic(err)
 	}
 	err = WriteFiles(files)
 	if err != nil {
-		spew.Dump(err)
 		panic(err)
 	}
 }

@@ -6,6 +6,7 @@ import (
 
 	"net/http"
 
+	"github.com/ashtonian/glew/static/cmd/cli/tools"
 	"github.com/spf13/cobra"
 )
 

@@ -52,6 +52,8 @@ type SQLStrings struct {
 }
 
 /// ***** Input
+
+// ModelMeta - simple struct with name and field information required to describe a model
 type ModelMeta struct {
 	Name   string
 	Fields []GoType

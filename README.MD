@@ -73,6 +73,13 @@ These are the primary dependencies and what they are responsible for:
 * Doesn't handle complex types - it just handles the basic stuff and will begin to break currently when you go outside of that.
 * Doesn't handle relationships - its just a "code printer". It knows basic things about fields and basic types (See #1) because thats easy. Exception: features should be loaded into the app generator with dependencies ordered first. This is simply because the database create scripts will need to be reordered otherwise.
 
+## Repo Structure
+
+* `./common` - simple std library of extensions, minor utilities, syntax sugars, smarter defaults, and other commonly used snippets for output project and others to use. TODO: Consider moving to its own repo and naming better.
+* `./static` - base copy paste static templates. This is the dumb starter project static contents.
+* `./templates` - this is the base templates for various code features. This is the core bootstrapper code thats being replaced.
+* `./` - this is the application that takes structs and generates different features and outputs a simple crud bootstrapped app. TODO: cli
+
 ## CLI Output Structure
 
 * `./` - all the dev tool ([drone](https://drone.io/), [go modules](https://blog.golang.org/using-go-modules), configs and main.go

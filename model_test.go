@@ -34,14 +34,19 @@ type UpdateTestModel struct {
 }
 
 func TestPlayground(t *testing.T) {
-
 	/*
 		CONFIG
+		destDir - the output directory from this run
+		appName - the name of the application and docker runtime
+		importPath - application go import directory, aka the directory of the app to reference itself
 	*/
 	destDir := "out"
+	appName := "testApp"
+	importPath := "github.com/ashtonian/glew/out"
+
 	verticals := []VerticalMeta{}
 
-	vertical, err := GenerateVertical(TestModel{}, "TestVertical", CreateTestModel{}, UpdateTestModel{})
+	vertical, err := GenerateVerticalMeta(TestModel{}, "TestVertical", CreateTestModel{}, UpdateTestModel{})
 	if err != nil {
 		panic(err)
 	}
@@ -49,9 +54,12 @@ func TestPlayground(t *testing.T) {
 	verticals = append(verticals, vertical)
 
 	ctx := BaseAPPCTX{
-		ImportPath: "github.com/karsto/test",
+		ImportPath: importPath, //TODO: hack to produce current import dir + out
 	}
-	files, err := GenerateApp(destDir, "testApp", verticals, ctx)
+
+	features := NewConfig()
+	files, err := GenerateApp(features, destDir, appName, verticals, ctx)
+
 	if err != nil {
 		panic(err)
 	}

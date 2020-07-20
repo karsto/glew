@@ -45,13 +45,13 @@ func GenerateStruct(structName string, fields []SField) (string, error) {
 	return content, nil
 }
 
-/* TODO: router template
+/* TODO: routertemplate.js
 PluralModelName
 ResourceName
 TitleCaseModelName
 */
 
-/* TODO: New Template
+/* TODO: New-Template.vue
 FieldRules
 FieldType
 FieldLabel
@@ -68,7 +68,7 @@ FormMapStatment // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
 FormDefaultStatement // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
 */
 
-/* TODO: List Template
+/* TODO: list-template.vue
 FieldRule
 FieldName
 FieldLabel
@@ -152,12 +152,12 @@ type ModelCtx struct {
 
 func GeneratePage(structName string) (string, error) {
 	fields := []SField{
-		SField{
+		{
 			Name: "Records",
 			Type: fmt.Sprintf("[]%v", structName),
 			Tags: "json:\"records\"",
 		},
-		SField{
+		{
 			Name: "Page",
 			Type: "types.PagingInfo",
 			Tags: "json:\"page\"",
@@ -285,27 +285,38 @@ func GenerateControllerFile(destDir, verticalName string, ctx ControllerCtx) (Fi
 }
 
 type FeatureConfig struct {
-	CopyBase    bool
-	Store       bool
-	Migrations  bool
-	Controllers bool
-	Models      bool
-	Utilities   bool
+	CopyBase     bool
+	Store        bool // dal/store/model.go
+	Migrations   bool
+	Controllers  bool
+	Models       bool
+	Utilities    bool
+	JSStore      bool
+	JSRouter     bool
+	VueNewModel  bool
+	VueListModel bool
+	APICRUDTest  bool
 }
 
 func NewConfig() FeatureConfig {
 	return FeatureConfig{
-		CopyBase:    true,
-		Store:       true,
-		Migrations:  true,
-		Controllers: true,
-		Models:      true,
+		CopyBase:     true,
+		Store:        true,
+		Migrations:   true,
+		Controllers:  true,
+		Models:       true,
+		Utilities:    false,
+		JSStore:      false,
+		JSRouter:     false,
+		VueNewModel:  false,
+		VueListModel: false,
+		APICRUDTest:  false,
 	}
 }
 
 func GenerateTrim(structName string, stringFieldNames []string) (string, error) {
 	const trimTmpl = `
-	func trim{{.StructName}}(m model.{{.StructName}}) model.{{.StructName}}{{print "{"}}{{ range  $value := .StringFieldNames }}
+	func trim{{.StructName}}(m {{.StructName}}) {{.StructName}}{{print "{"}}{{ range  $value := .StringFieldNames }}
 		m.{{$value}} = strings.TrimSpace(m.{{$value}}){{ end }}
 		return m
 	}`
@@ -324,8 +335,8 @@ func GenerateMapFunc(structName, targetName string, fields []string) (string, er
 	// toMapPl := `
 	// `
 	toMapPl := `
-	func (m *{{.StructName}}) To{{.TargetName}}() model.{{.TargetName}} {
-		out := model.{{.TargetName}}{{print "{}"}}
+	func (m *{{.StructName}}) To{{.TargetName}}() {{.TargetName}} {
+		out := {{.TargetName}}{{print "{}"}}
 		{{.MapStatement}}
 		return out
 	}
@@ -352,7 +363,7 @@ func GenerateMapFunc(structName, targetName string, fields []string) (string, er
 // nilstatements[fieldname]newStatement
 func GenerateInit(structName string, nilStatements map[string]string) (string, error) {
 	const nilTmpl = `
-	func initialize{{.StructName}}(m model.{{.StructName}}) model.{{.StructName}}{{"{"}}{{ range $key, $value := .NilStatements }}
+	func initialize{{.StructName}}(m {{.StructName}}) {{.StructName}}{{"{"}}{{ range $key, $value := .NilStatements }}
 		if m.{{$key}} == nil {
 			m.{{$key}} = {{$value}}
 		}
@@ -508,6 +519,26 @@ func GenerateSQL(ctx SQLCtx) (SQLStrings, error) {
 	out.DropTable = dropTblSQL
 
 	return out, err
+}
+
+type JSRouterCTX struct {
+	ResourceName        []string
+	PluralModelNames    []string
+	TitleCaseModelNames []string
+}
+
+func NewJSRouterCTX(verticals []VerticalMeta) (JSRouterCTX, error) {
+	out := JSRouterCTX{
+		ResourceName:        []string{},
+		PluralModelNames:    []string{},
+		TitleCaseModelNames: []string{},
+	}
+	for _, v := range verticals {
+		out.ResourceName = append(out.ResourceName, v.Name)
+		out.PluralModelNames = append(out.PluralModelNames, v.Name)
+		out.TitleCaseModelNames = append(out.TitleCaseModelNames, v.Name)
+	}
+	return out, nil
 }
 
 func GenerateMigrationFiles(destDir, verticalName string, sql SQLStrings, dbScriptIdxStart int) ([]FileContainer, error) {

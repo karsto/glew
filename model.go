@@ -8,6 +8,11 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+/*
+* Vertical - is a vertical set of features around a single 'model'
+ */
+
+// Vertical Meta - all the meta information needed to create a vertical.
 type VerticalMeta struct {
 	Name        string
 	Model       ModelMeta
@@ -15,16 +20,23 @@ type VerticalMeta struct {
 	UpdateModel ModelMeta
 }
 
+// GeneratedVertical - the resulting vertical feature set. Contains Raw strings and objects generated in case they are to be used elsewhere as well as file containers aka digital abstractions of files.
 type GeneratedVertical struct {
-	SQL         SQLStrings
-	Controllers []FileContainer
-	Store       []FileContainer
-	Models      []FileContainer
-	Migrations  []FileContainer
+	SQL              SQLStrings
+	Controllers      []FileContainer
+	Store            []FileContainer
+	Models           []FileContainer
+	Migrations       []FileContainer
+	JSRouterTemplate FileContainer
+	JSStores         []FileContainer
+	VueNewModels     []FileContainer
+	VueListModels    []FileContainer
+	APICRUDTests     []FileContainer
 }
 
+// GenerateVerti calMeta - takes in model, name, and create/update reference models and then using reflection generates the meta for each struct.
 // model must be populated. name can be empty, createM, putM can be nil.
-func GenerateVertical(model interface{}, name string, createM, putM interface{}) (VerticalMeta, error) {
+func GenerateVerticalMeta(model interface{}, name string, createM, putM interface{}) (VerticalMeta, error) {
 	if createM == nil {
 		createM = model
 	}
@@ -59,6 +71,7 @@ func GenerateVertical(model interface{}, name string, createM, putM interface{})
 	return out, nil
 }
 
+// GetSQLType - maps golang data type to corresponding postgres sql data type to be used in a create statement.
 func GetSQLType(t reflect.Type) string {
 	out := "TODO"
 	switch t.Kind() {
@@ -93,6 +106,14 @@ func GetSQLType(t reflect.Type) string {
 	}
 	return out
 }
+
+// NewDBTypeCtx - looks at the struct tags - `db`, and `db2` to get additional information or overrides of sql specific field flags.
+// `db` Tag - specificy the column name. Hijaking db struct tag from pgx.
+// `db2` Tag - custom tag from glew
+// db2:type - specify or override the db column type.
+// db2:default - specify the db default value if any.
+// db2:pk - set to enable primary key statement
+// db2:notnull - set to enable not null statement.
 
 func NewDBTypeCtx(t GoType) DBTypeCtx {
 	name := t.Name
@@ -130,6 +151,7 @@ func NewDBTypeCtx(t GoType) DBTypeCtx {
 	return out
 }
 
+// NewSQLCtx - takes in the metadata for a given vertical and creates all related sql fields.
 func NewSQLCtx(vertical VerticalMeta) SQLCtx {
 	dbFields := []string{}
 	createStatements := []string{}
@@ -168,6 +190,7 @@ func NewSQLCtx(vertical VerticalMeta) SQLCtx {
 	return out
 }
 
+// Generates all the required
 func NewStoreCtx(v VerticalMeta, sql SQLStrings, baseCtx BaseAPPCTX) StoreCtx {
 	tableName := strcase.ToSnake(v.Name)
 	modelNameTitleCase := strcase.ToCamel(v.Name)
@@ -221,7 +244,8 @@ func GetNilableFields(fields []GoType) map[string]string {
 	return out
 }
 
-func NewModelCtx(v VerticalMeta, sql SQLStrings) (ModelCtx, error) {
+//
+func NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 	fields := []SField{}
 	for _, v := range v.Model.Fields {
 		fields = append(fields, SField{
@@ -340,10 +364,10 @@ func NewModelCtx(v VerticalMeta, sql SQLStrings) (ModelCtx, error) {
 	return out, nil
 }
 
-func GenerateApp(destRoot, appName string, verticals []VerticalMeta, baseCtx BaseAPPCTX) ([]FileContainer, error) {
+// GenerateApp - takes in the required information to generate a basic crud app and based on the feature flags enabled, generates those features.
+func GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []VerticalMeta, baseCtx BaseAPPCTX) ([]FileContainer, error) {
 	// copy base
 	destDir := destRoot //  filepath.Join(destRoot, "base-project")
-	cfg := NewConfig()
 	out := []FileContainer{}
 	if cfg.CopyBase {
 		files, err := GenerateBaseApp(destRoot, appName, baseCtx)
@@ -393,7 +417,7 @@ func GenerateApp(destRoot, appName string, verticals []VerticalMeta, baseCtx Bas
 			verticalOut.Controllers = append(verticalOut.Controllers, controllerFile)
 		}
 		if cfg.Models {
-			ctx, err := NewModelCtx(v, sql)
+			ctx, err := NewModelCtx(v)
 			if err != nil {
 				return out, err
 			}
@@ -403,7 +427,16 @@ func GenerateApp(destRoot, appName string, verticals []VerticalMeta, baseCtx Bas
 			}
 			verticalOut.Models = append(verticalOut.Models, model)
 		}
+
 		verticalsOut = append(verticalsOut, verticalOut)
+	}
+
+	if cfg.JSRouter {
+		ctx, err := NewJSRouterCTX(verticals)
+		if err != nil {
+			return out, err
+		}
+
 	}
 
 	for _, v := range verticalsOut {

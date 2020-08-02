@@ -8,7 +8,11 @@ import {
   newDecoder
 } from '@/util'
 
+
 // TODO: check network tab bundles imported twice on pages not sure why maybe https://stackoverflow.com/questions/37081559/all-my-code-runs-twice-when-compiled-by-webpack
+
+{{range $idx, $nme := .PluralModelNames}}
+{{end}}
 const {{.PluralModelName}} = () => import( /* webpackChunkName: "{{.PluralModelName}}" */ '@/components/{{.PluralModelName}}')
 const new{{.TitleCaseModelName}} = () => import( /* webpackChunkName: "new{{.TitleCaseModelName}}" */ '@/components/new{{.TitleCaseModelName}}')
 

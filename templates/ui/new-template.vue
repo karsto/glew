@@ -44,7 +44,7 @@
             @click="()=>{validate().then(postValidCheck)}"
             @keyup.enter="()=>{validate().then(postValidCheck)}"
             :loading="false"
-          >{{ isEditMode ? "Update" : "Create"}}</b-button>
+          >{{"{{"}} isEditMode ? "Update" : "Create"{{"}}"}}</b-button>
           <b-button
             class="button is-small is-info"
             v-if="!isFormDefault"

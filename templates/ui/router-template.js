@@ -11,11 +11,10 @@ import {
 
 // TODO: check network tab bundles imported twice on pages not sure why maybe https://stackoverflow.com/questions/37081559/all-my-code-runs-twice-when-compiled-by-webpack
 
-{{range $idx, $nme := .PluralModelNames}}
-{{end}}
+{{range .Routes}}
 const {{.PluralModelName}} = () => import( /* webpackChunkName: "{{.PluralModelName}}" */ '@/components/{{.PluralModelName}}')
 const new{{.TitleCaseModelName}} = () => import( /* webpackChunkName: "new{{.TitleCaseModelName}}" */ '@/components/new{{.TitleCaseModelName}}')
-
+{{end}}
 
 Vue.use(Router)
 
@@ -44,7 +43,7 @@ let router = new Router({
     //     isPublic: true,
     //     allowedRoles: []
     //   }
-    // },
+    // },{{range .Routes}}
     {
       path: '/{{.ResourceName}}/new',
       name: 'new{{.TitleCaseModelName}}',
@@ -64,7 +63,7 @@ let router = new Router({
       meta: {
 
       }
-    },
+    },{{end}}
     {
       // ROOT
       path: '/',

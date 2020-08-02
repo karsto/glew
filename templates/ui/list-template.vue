@@ -102,17 +102,17 @@
         // TODO: if ID
         <b-table-column field="id" label="ID" width="40" numeric sortable>
           <router-link
-            :to="{ name: 'edit{{.TitleCaseModelName}}', params: { id:props.row.id, model: props.row }}"
-          >{{ props.row.id}}</router-link>
+            :to="{ name: 'edit{{.TitleCaseModelName}}', params: { id:props.row.id, model: props.row {{"}}"}}"
+          >{{"{{"}} props.row.id{{"}}"}}</router-link>
         </b-table-column>
         <b-table-column
           field="{{.FieldName}}"
           label="{{.FieldLabel}}"
           {{.ColModifers}}
-        >{{ props.row.{{.FieldName}} }}</b-table-column>
+        >{{"{{"}} props.row.{{.FieldName}} {{"}}"}}</b-table-column>
 
         <b-table-column label="Edit">
-          <router-link :to="{ name: 'edit{{.TitleCaseModelName}}', params: { id:props.row.id, model: props.row }}">
+          <router-link :to="{ name: 'edit{{.TitleCaseModelName}}', params: { id:props.row.id, model: props.row {{"}}"}}">
             <b-icon icon="edit" size="is-small"></b-icon>
           </router-link>
 
@@ -134,7 +134,7 @@
       <template slot="footer"></template>
       <template slot="bottom-left">
         <b>Total checked</b>
-        : {{ toDelete{{.ModelNamePluralTitleCase}}Arr.length }}
+        : {{"{{"}}toDelete{{.ModelNamePluralTitleCase}}Arr.length {{"}}"}}
         <b-button
           icon-left="trash"
           v-if="toDelete{{.ModelNamePluralTitleCase}}Arr.length >0"

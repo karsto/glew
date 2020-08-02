@@ -22,16 +22,16 @@ type VerticalMeta struct {
 
 // GeneratedVertical - the resulting vertical feature set. Contains Raw strings and objects generated in case they are to be used elsewhere as well as file containers aka digital abstractions of files.
 type GeneratedVertical struct {
-	SQL              SQLStrings
-	Controllers      []FileContainer
-	Store            []FileContainer
-	Models           []FileContainer
-	Migrations       []FileContainer
-	JSRouterTemplate FileContainer
-	JSStores         []FileContainer
-	VueNewModels     []FileContainer
-	VueListModels    []FileContainer
-	APICRUDTests     []FileContainer
+	SQL        SQLStrings
+	Controller FileContainer
+	Store      FileContainer
+	Model      FileContainer
+	Migrations []FileContainer
+
+	JSStore      FileContainer
+	VueNewModel  FileContainer
+	VueListModel FileContainer
+	APICRUDTests FileContainer
 }
 
 // GenerateVerti calMeta - takes in model, name, and create/update reference models and then using reflection generates the meta for each struct.
@@ -396,7 +396,7 @@ func GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []Vertic
 			if err != nil {
 				return out, err
 			}
-			verticalOut.Store = append(verticalOut.Store, storeFile)
+			verticalOut.Store = storeFile
 		}
 
 		if cfg.Migrations {
@@ -414,7 +414,7 @@ func GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []Vertic
 			if err != nil {
 				return out, err
 			}
-			verticalOut.Controllers = append(verticalOut.Controllers, controllerFile)
+			verticalOut.Controller = controllerFile
 		}
 		if cfg.Models {
 			ctx, err := NewModelCtx(v)
@@ -425,10 +425,69 @@ func GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []Vertic
 			if err != nil {
 				return out, err
 			}
-			verticalOut.Models = append(verticalOut.Models, model)
+			verticalOut.Model = model
+		}
+
+		if cfg.APICRUDTest {
+			ctx, err := NewTestCtx()
+			if err != nil {
+				return out, err
+			}
+			crudTestFile, err := GenerateRESTTestFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.APICRUDTests = crudTestFile
+		}
+
+		if cfg.JSStore {
+			ctx, err := NewStoreTemplateVueCtx(v)
+			if err != nil {
+				return out, err
+			}
+			jsStoreFile, err := GenerateStoreVueFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.JSStore = jsStoreFile
+		}
+
+		if cfg.VueListModel {
+			ctx, err := NewListTemplateVueCtx()
+			if err != nil {
+				return out, err
+			}
+			listFile, err := GenerateListVueFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.VueListModel = listFile
+		}
+
+		if cfg.VueNewModel {
+			ctx, err := NewNewTemplateVueCtx()
+			if err != nil {
+				return out, err
+			}
+			newVueFile, err := GenerateNewVueFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.VueNewModel = newVueFile
 		}
 
 		verticalsOut = append(verticalsOut, verticalOut)
+	}
+
+	for _, v := range verticalsOut {
+		out = append(out, v.Migrations...)
+		out = append(out, v.Controller)
+		out = append(out, v.Store)
+		out = append(out, v.Model)
+		out = append(out, v.APICRUDTests)
+		out = append(out, v.JSStore)
+		out = append(out, v.VueListModel)
+		out = append(out, v.VueNewModel)
 	}
 
 	if cfg.JSRouter {
@@ -436,14 +495,11 @@ func GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []Vertic
 		if err != nil {
 			return out, err
 		}
-
-	}
-
-	for _, v := range verticalsOut {
-		out = append(out, v.Migrations...)
-		out = append(out, v.Controllers...)
-		out = append(out, v.Store...)
-		out = append(out, v.Models...)
+		jsRouter, err := GenerateJSRouterFile(destDir, ctx)
+		if err != nil {
+			return out, err
+		}
+		out = append(out, jsRouter)
 	}
 
 	return out, nil

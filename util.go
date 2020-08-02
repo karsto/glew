@@ -85,21 +85,29 @@ func GetMeta(m interface{}) (ModelMeta, error) {
 }
 
 type Paths struct {
-	DB          string
-	Migrations  string
-	Core        string
-	Controllers string
-	Store       string
-	Model       string
+	DB           string
+	Migrations   string
+	Core         string
+	Controllers  string
+	Tests        string
+	Store        string
+	Model        string
+	UI           string
+	UIStore      string
+	UIComponents string
 }
 
 var paths = Paths{
-	DB:          "db",
-	Migrations:  "db/migrations",
-	Core:        "db/migrations/core",
-	Controllers: "pkg/api/controllers",
-	Store:       "pkg/api/store",
-	Model:       "pkg/api/model",
+	DB:           "db",
+	Migrations:   "db/migrations",
+	Core:         "db/migrations/core",
+	Controllers:  "pkg/api/controllers",
+	Tests:        "pkg/api/tests",
+	Store:        "pkg/api/store",
+	Model:        "pkg/api/model",
+	UI:           "ui",
+	UIStore:      "ui/store",
+	UIComponents: "ui/components",
 }
 
 func NewPaths() Paths {

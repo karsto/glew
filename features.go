@@ -10,6 +10,8 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+// TODO: Refactor and consolidate file generate pattern?
+
 type SField struct {
 	Name string
 	Type string
@@ -45,41 +47,140 @@ func GenerateStruct(structName string, fields []SField) (string, error) {
 	return content, nil
 }
 
-/* TODO: routertemplate.js
-PluralModelName
-ResourceName
-TitleCaseModelName
-*/
+type StoreTemplateVueCtx struct {
+	Resource string
+}
 
-/* TODO: New-Template.vue
-FieldRules
-FieldType
-FieldLabel
-FieldPlaceHolder
-JSONFieldName
-JSONDefault
-ResourceRoute
+func NewStoreTemplateVueCtx(vertical VerticalMeta) (StoreTemplateVueCtx, error) {
+	out := StoreTemplateVueCtx{
+		Resource: strcase.ToKebab(vertical.Name),
+	}
+	return out, nil
+}
 
-TitleCaseModelName
-CamelCaseModelName
-CamelCasePluralModelName
-TitleCaseModelPluralName
-FormMapStatment // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
-FormDefaultStatement // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
-*/
+func GenerateStoreVueFile(destDir, verticalName string, ctx StoreTemplateVueCtx) (FileContainer, error) {
+	modelName := strcase.ToLowerCamel(verticalName)
+	uiStoreDest := path.Join(destDir, NewPaths().UIStore)
+	fileName := fmt.Sprintf("%v.js", modelName)
 
-/* TODO: list-template.vue
-FieldRule
-FieldName
-FieldLabel
-FieldType
-ColModifers
+	b, err := ioutil.ReadFile("templates/ui/store-template.js") // TODO: no magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+	storeTmpl := string(b)
 
-TitleCaseModelName
-CamelCaseModelName
-ModelNamePluralTitleCase
-CamelCasePlural
+	content, err := ExecuteTemplate("uiStore", storeTmpl, ctx) // TODO: magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
 
+	out := FileContainer{
+		Content:     content,
+		Destination: uiStoreDest,
+		FileName:    fileName,
+	}
+	return out, nil
+}
+
+type NewTemplateVueCtx struct {
+	FieldRules         string
+	FieldType          string
+	FieldLabel         string
+	FieldPlaceHolder   string
+	JSONFieldName      string
+	JSONDefault        string
+	ResourceRoute      string
+	ModelTitleCaseName string
+
+	TitleCaseModelName       string
+	CamelCaseModelName       string
+	CamelCasePluralModelName string
+	TitleCaseModelPluralName string
+	FormMapStatment          string // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
+	FormDefaultStatement     string // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
+}
+
+func NewNewTemplateVueCtx() (NewTemplateVueCtx, error) {
+	out := NewTemplateVueCtx{}
+	return out, nil
+}
+
+func GenerateNewVueFile(destDir, verticalName string, ctx NewTemplateVueCtx) (FileContainer, error) {
+	modelName := strcase.ToLowerCamel(verticalName)
+	newVueDest := path.Join(destDir, NewPaths().UIComponents)
+	fileName := fmt.Sprintf("new%v.vue", modelName)
+
+	b, err := ioutil.ReadFile("templates/ui/new-template.vue") // TODO: no magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+	newVuewTmpl := string(b)
+
+	content, err := ExecuteTemplate("uiNewModel", newVuewTmpl, ctx) // TODO: magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+
+	out := FileContainer{
+		Content:     content,
+		Destination: newVueDest,
+		FileName:    fileName,
+	}
+	return out, nil
+}
+
+type Prop struct {
+}
+type ListTemplateVueCtx struct {
+	FieldRule            string
+	FieldName            string
+	FieldLabel           string
+	FieldType            string
+	ColModifers          string
+	COLOverrideStatement string
+	ResourceRoute        string
+	FormDefaultStatement string
+	SearchStatement      string
+
+	Props                    Prop
+	ModelTitleName           string
+	TitleCaseModelName       string
+	CamelCaseModelName       string
+	ModelNamePluralTitleCase string
+	CamelCasePlural          string
+}
+
+func NewListTemplateVueCtx() (ListTemplateVueCtx, error) {
+	out := ListTemplateVueCtx{}
+	return out, nil
+}
+
+func GenerateListVueFile(destDir, verticalName string, ctx ListTemplateVueCtx) (FileContainer, error) {
+	modelName := pluralizer.Plural(verticalName)
+	modelName = strcase.ToLowerCamel(modelName)
+	listVueDest := path.Join(destDir, NewPaths().UIComponents)
+	fileName := fmt.Sprintf("%v.vue", modelName)
+
+	b, err := ioutil.ReadFile("templates/ui/list-template.vue") // TODO: no magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+	listTmpl := string(b)
+
+	content, err := ExecuteTemplate("uiListModel", listTmpl, ctx) // TODO: magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+
+	out := FileContainer{
+		Content:     content,
+		Destination: listVueDest,
+		FileName:    fileName,
+	}
+	return out, nil
+}
+
+/*
 // TODO: search statement is the following
       // TODO: for each number field
       if (this.search.{{.NumField}} && this.search.{{.NumField}} > 0) {
@@ -107,6 +208,36 @@ type TestCTX struct {
 	ModelNamePluralCamel     string
 	DefaultFieldStatement    string // TODO: {{.FieldGOName}}: {{.TODOStringOrINToRGODefault}},
 }
+
+func NewTestCtx() (TestCTX, error) {
+	out := TestCTX{}
+	return out, nil
+}
+
+func GenerateRESTTestFile(destDir, verticalName string, ctx TestCTX) (FileContainer, error) {
+	modelName := strcase.ToSnake(verticalName)
+	testfileDest := path.Join(destDir, NewPaths().Tests)
+	fileName := fmt.Sprintf("%v_test.go", modelName)
+
+	b, err := ioutil.ReadFile("templates/test-template.go") // TODO: no magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+	testTmpl := string(b)
+
+	content, err := ExecuteTemplate("restCrudTest", testTmpl, ctx) // TODO: magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+
+	out := FileContainer{
+		Content:     content,
+		Destination: testfileDest,
+		FileName:    fileName,
+	}
+	return out, nil
+}
+
 type BaseAPPCTX struct {
 	ImportPath string
 }
@@ -305,12 +436,12 @@ func NewConfig() FeatureConfig {
 		Migrations:   true,
 		Controllers:  true,
 		Models:       true,
-		Utilities:    false,
-		JSStore:      false,
-		JSRouter:     false,
-		VueNewModel:  false,
-		VueListModel: false,
-		APICRUDTest:  false,
+		Utilities:    true,
+		JSStore:      true,
+		JSRouter:     true,
+		VueNewModel:  true,
+		VueListModel: true,
+		APICRUDTest:  true,
 	}
 }
 
@@ -521,22 +652,52 @@ func GenerateSQL(ctx SQLCtx) (SQLStrings, error) {
 	return out, err
 }
 
+type Route struct {
+	ResourceName       string
+	PluralModelName    string
+	TitleCaseModelName string
+}
+
 type JSRouterCTX struct {
-	ResourceName        []string
-	PluralModelNames    []string
-	TitleCaseModelNames []string
+	Routes []Route
 }
 
 func NewJSRouterCTX(verticals []VerticalMeta) (JSRouterCTX, error) {
 	out := JSRouterCTX{
-		ResourceName:        []string{},
-		PluralModelNames:    []string{},
-		TitleCaseModelNames: []string{},
+		Routes: []Route{},
 	}
+
 	for _, v := range verticals {
-		out.ResourceName = append(out.ResourceName, v.Name)
-		out.PluralModelNames = append(out.PluralModelNames, v.Name)
-		out.TitleCaseModelNames = append(out.TitleCaseModelNames, v.Name)
+		pluralName := pluralizer.Plural(v.Name)
+		route := Route{
+			ResourceName:       strcase.ToKebab(v.Name),
+			PluralModelName:    strcase.ToLowerCamel(pluralName),
+			TitleCaseModelName: v.Name,
+		}
+		out.Routes = append(out.Routes, route)
+	}
+	return out, nil
+}
+
+func GenerateJSRouterFile(destDir string, ctx JSRouterCTX) (FileContainer, error) {
+	routerDest := path.Join(destDir, NewPaths().UI)
+	fileName := fmt.Sprintf("%v.js", "router") // TODO: magic strings
+
+	b, err := ioutil.ReadFile("templates/ui/router-template.js") // TODO: no magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+	routerTmpl := string(b)
+
+	content, err := ExecuteTemplate("uiRouter", routerTmpl, ctx) // TODO: magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+
+	out := FileContainer{
+		Content:     content,
+		Destination: routerDest,
+		FileName:    fileName,
 	}
 	return out, nil
 }

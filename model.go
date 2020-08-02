@@ -300,6 +300,7 @@ func NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 		return ModelCtx{}, err
 	}
 	createTrim, err := GenerateTrim(createName, GetStringFields(v.CreateModel.Fields))
+
 	if err != nil {
 		return ModelCtx{}, err
 	}
@@ -312,6 +313,18 @@ func NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 		return ModelCtx{}, err
 	}
 	createNil, err := GenerateInit(createName, GetNilableFields(v.CreateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	mNew, err := GenerateNew(mName, GetNilableFields(v.Model.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	updateNew, err := GenerateNew(updateName, GetNilableFields(v.UpdateModel.Fields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	createNew, err := GenerateNew(createName, GetNilableFields(v.CreateModel.Fields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
@@ -351,10 +364,14 @@ func NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 	utilities = utilities + cToUpdate + "\n"
 	utilities = utilities + mTrim + "\n"
 	utilities = utilities + mNil + "\n"
+	utilities = utilities + mNew + "\n"
 	utilities = utilities + updateTrim + "\n"
 	utilities = utilities + updateNil + "\n"
+	utilities = utilities + updateNew + "\n"
 	utilities = utilities + createTrim + "\n"
 	utilities = utilities + createNil + "\n"
+	utilities = utilities + createNew + "\n"
+
 	out := ModelCtx{
 		Model:       model,
 		CreateModel: createModel,

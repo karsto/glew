@@ -447,9 +447,8 @@ func NewConfig() FeatureConfig {
 
 func GenerateTrim(structName string, stringFieldNames []string) (string, error) {
 	const trimTmpl = `
-	func trim{{.StructName}}(m {{.StructName}}) {{.StructName}}{{print "{"}}{{ range  $value := .StringFieldNames }}
+	func (m *{{.StructName}}) Trim(){ {{ range  $value := .StringFieldNames }}
 		m.{{$value}} = strings.TrimSpace(m.{{$value}}){{ end }}
-		return m
 	}`
 	ctx := map[string]interface{}{
 		"StructName":       structName,
@@ -466,7 +465,7 @@ func GenerateMapFunc(structName, targetName string, fields []string) (string, er
 	// toMapPl := `
 	// `
 	toMapPl := `
-	func (m *{{.StructName}}) To{{.TargetName}}() {{.TargetName}} {
+	func (m {{.StructName}}) To{{.TargetName}}() {{.TargetName}} {
 		out := {{.TargetName}}{{print "{}"}}
 		{{.MapStatement}}
 		return out
@@ -494,18 +493,38 @@ func GenerateMapFunc(structName, targetName string, fields []string) (string, er
 // nilstatements[fieldname]newStatement
 func GenerateInit(structName string, nilStatements map[string]string) (string, error) {
 	const nilTmpl = `
-	func initialize{{.StructName}}(m {{.StructName}}) {{.StructName}}{{"{"}}{{ range $key, $value := .NilStatements }}
+	func (m *{{.StructName}}) Initialize() { {{ range $key, $value := .NilStatements }}
 		if m.{{$key}} == nil {
 			m.{{$key}} = {{$value}}
 		}
 	{{ end }}
-		return m
 	}`
 	ctx := map[string]interface{}{
 		"StructName":    structName,
 		"NilStatements": nilStatements,
 	}
 	initFunc, err := ExecuteTemplate("niltpl", nilTmpl, ctx)
+	if err != nil {
+		return "", err
+	}
+	return initFunc, nil
+}
+
+func GenerateNew(structName string, nilStatements map[string]string) (string, error) {
+	const newTmpl = `
+	func New{{.StructName}}()*{{.StructName}} {
+		m := {{.StructName}}{}{{ range $key, $value := .NilStatements }}
+		if m.{{$key}} == nil {
+			m.{{$key}} = {{$value}}
+		}
+	{{ end }}
+	return &m
+	}`
+	ctx := map[string]interface{}{
+		"StructName":    structName,
+		"NilStatements": nilStatements,
+	}
+	initFunc, err := ExecuteTemplate("newTmpl", newTmpl, ctx)
 	if err != nil {
 		return "", err
 	}

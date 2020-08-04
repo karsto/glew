@@ -6,6 +6,7 @@
           <b-field grouped group-multiline>
 
             // TODO: same field loop
+            {{range .ModelFieldsMeta}}
             <ValidationProvider rules="{{.FieldRule}}" name="{{.FieldName}}">
               <b-field
                 slot-scope="{ errors, valid }"
@@ -17,7 +18,7 @@
                 <b-input type="{{.FieldType}}" :value="null" placeholder="{{.FieldLabel}}" v-model="search.{{.FieldName}}"></b-input>
               </b-field>
             </ValidationProvider>
-
+            {{end}}
             <b-field label="Per Page">
               <b-select v-model.number="pageInfoReadOnlyPerPage" @input="onPerPageChange">
                 <option value="1">1</option>
@@ -105,12 +106,13 @@
             :to="{ name: 'edit{{.TitleCaseModelName}}', params: { id:props.row.id, model: props.row {{"}}"}}"
           >{{"{{"}} props.row.id{{"}}"}}</router-link>
         </b-table-column>
+        {{range .ModelFieldsMeta}}
         <b-table-column
           field="{{.FieldName}}"
           label="{{.FieldLabel}}"
           {{.ColModifers}}
         >{{"{{"}} props.row.{{.FieldName}} {{"}}"}}</b-table-column>
-
+        {{end}}
         <b-table-column label="Edit">
           <router-link :to="{ name: 'edit{{.TitleCaseModelName}}', params: { id:props.row.id, model: props.row {{"}}"}}">
             <b-icon icon="edit" size="is-small"></b-icon>

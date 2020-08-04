@@ -83,25 +83,42 @@ func GenerateStoreVueFile(destDir, verticalName string, ctx StoreTemplateVueCtx)
 }
 
 type NewTemplateVueCtx struct {
-	FieldRules         string
-	FieldType          string
-	FieldLabel         string
-	FieldPlaceHolder   string
-	JSONFieldName      string
-	JSONDefault        string
-	ResourceRoute      string
-	ModelTitleCaseName string
-
+	ModelFieldsMeta          []ModelFieldMeta
+	ResourceRoute            string
+	ModelTitleCaseName       string
 	TitleCaseModelName       string
 	CamelCaseModelName       string
 	CamelCasePluralModelName string
 	TitleCaseModelPluralName string
-	FormMapStatment          string // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
-	FormDefaultStatement     string // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
+	FormMapStatment          string
+	FormDefaultStatement     string
 }
 
-func NewNewTemplateVueCtx() (NewTemplateVueCtx, error) {
-	out := NewTemplateVueCtx{}
+func GenerateMapStatement(types []GoType) string {
+	out := strings.Builder{}
+	for _, v := range types {
+		name := strcase.ToLowerCamel(v.Name)
+		stmt := fmt.Sprintf("%s:'%s',", name, name)
+		out.WriteString(stmt)
+	}
+	return out.String()
+
+}
+
+func NewNewTemplateVueCtx(vertical VerticalMeta) (NewTemplateVueCtx, error) {
+	modelMeta := GetModelFieldMeta(vertical)
+	pName := pluralizer.Plural(vertical.Name)
+	out := NewTemplateVueCtx{
+		ModelFieldsMeta:          modelMeta,
+		ResourceRoute:            strcase.ToKebab(vertical.Name),
+		ModelTitleCaseName:       strcase.ToCamel(vertical.Name),
+		TitleCaseModelName:       strcase.ToCamel(vertical.Name),
+		CamelCaseModelName:       strcase.ToLowerCamel(vertical.Name),
+		CamelCasePluralModelName: strcase.ToLowerCamel(pName),
+		TitleCaseModelPluralName: strcase.ToCamel(pName),
+		FormMapStatment:          GenerateMapStatement(vertical.Model.Fields),          // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
+		FormDefaultStatement:     GenerateFormDefaultsStatement(vertical.Model.Fields), // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
+	}
 	return out, nil
 }
 
@@ -129,29 +146,137 @@ func GenerateNewVueFile(destDir, verticalName string, ctx NewTemplateVueCtx) (Fi
 	return out, nil
 }
 
-type Prop struct {
+type ModelFieldMeta struct {
+	FieldRule     string
+	FieldName     string
+	FieldLabel    string
+	FieldType     string
+	JSONFieldName string
+	ColModifers   string
 }
 type ListTemplateVueCtx struct {
-	FieldRule            string
-	FieldName            string
-	FieldLabel           string
-	FieldType            string
-	ColModifers          string
-	COLOverrideStatement string
-	ResourceRoute        string
-	FormDefaultStatement string
-	SearchStatement      string
-
-	Props                    Prop
+	ModelFieldsMeta          []ModelFieldMeta
 	ModelTitleName           string
 	TitleCaseModelName       string
 	CamelCaseModelName       string
 	ModelNamePluralTitleCase string
 	CamelCasePlural          string
+	COLOverrideStatement     string
+	ResourceRoute            string
+	FormDefaultStatement     string
+	SearchStatement          string
 }
 
-func NewListTemplateVueCtx() (ListTemplateVueCtx, error) {
-	out := ListTemplateVueCtx{}
+func GetDefaultRule(t GoType) string {
+	if t.IsNumeric() {
+		return "min_value:1|numeric"
+	}
+	if t.IsString() {
+		return "alpha_dash"
+	}
+	return "TODO: rule"
+}
+
+func GetFieldType(t GoType) string {
+	if t.IsNumeric() {
+		return "number"
+	}
+	if t.IsString() {
+		return "text"
+	}
+	return "TODO: field type"
+}
+
+func GetColMod(t GoType) string {
+	if t.IsNumeric() {
+		return "\nnumberic\nsortable\n"
+	}
+	if t.IsString() {
+		return "\nsortable\n"
+	}
+	return "TODO: field type"
+}
+
+func GetModelFieldMeta(vertical VerticalMeta) []ModelFieldMeta {
+	out := []ModelFieldMeta{}
+	for _, v := range vertical.Model.Fields {
+		mfm := ModelFieldMeta{
+			FieldRule:     GetDefaultRule(v),
+			FieldName:     strcase.ToLowerCamel(v.Name),
+			FieldLabel:    "TODO:" + v.Name,
+			FieldType:     GetFieldType(v),
+			ColModifers:   GetColMod(v),
+			JSONFieldName: strcase.ToLowerCamel(v.Name),
+		}
+		out = append(out, mfm)
+	}
+	return out
+}
+
+func GenerateCOLOverrideStatement(fields []GoType) string {
+	out := strings.Builder{}
+	for _, v := range fields {
+		leftCol := fmt.Sprintf("%s:'%s',\n", strcase.ToLowerCamel(v.Name), strcase.ToSnake(v.Name))
+		rightCol := fmt.Sprintf("%s:'%s',\n", strcase.ToSnake(v.Name), strcase.ToLowerCamel(v.Name))
+		out.WriteString(leftCol)
+		out.WriteString(rightCol)
+	}
+	return out.String()
+}
+
+func GenerateFormDefaultsStatement(fields []GoType) string {
+	out := strings.Builder{}
+	for _, v := range fields {
+		defstmt := fmt.Sprintf("%s: null,\n", strcase.ToLowerCamel(v.Name))
+		out.WriteString(defstmt)
+	}
+	return out.String()
+}
+
+func GenerateSearchStatement(fields []GoType) string {
+	out := strings.Builder{}
+
+	for _, v := range fields {
+		name := strcase.ToLowerCamel(v.Name)
+		if v.IsNumeric() {
+			stmt := fmt.Sprintf("\nif (this.search.%s && this.search.%s > 0) {\nfilter.$or.push({ %s: this.search.%s });\n}", name, name, name, name)
+			out.WriteString(stmt)
+		}
+		if v.IsString() {
+			txtTmpl := `
+			if (this.search.{{.StringField}} && this.search.{{.StringField}}.length > 0) {
+			let {{.StringField}} = this.search.{{.StringField}};
+			filter.$or.push(
+				{
+					{{.StringField}}:{$like:` + "`%{{.StringField}}%`}\n}),\n}\n"
+
+			stmt, err := ExecuteTemplate("searchTmpl", txtTmpl, map[string]interface{}{"StringField": name})
+			if err != nil {
+				println(err)
+			}
+
+			out.WriteString(stmt)
+		}
+
+	}
+	return out.String()
+}
+
+func NewListTemplateVueCtx(vertical VerticalMeta) (ListTemplateVueCtx, error) {
+	fieldsmeta := GetModelFieldMeta(vertical)
+	pName := pluralizer.Plural(vertical.Name)
+	out := ListTemplateVueCtx{
+		ModelFieldsMeta:          fieldsmeta,
+		COLOverrideStatement:     GenerateCOLOverrideStatement(vertical.Model.Fields),
+		ResourceRoute:            strcase.ToKebab(vertical.Name),
+		FormDefaultStatement:     GenerateFormDefaultsStatement(vertical.Model.Fields),
+		SearchStatement:          GenerateSearchStatement(vertical.Model.Fields),
+		ModelTitleName:           strcase.ToCamel(vertical.Name),
+		TitleCaseModelName:       strcase.ToCamel(vertical.Name),
+		CamelCaseModelName:       strcase.ToLowerCamel(vertical.Name),
+		ModelNamePluralTitleCase: strcase.ToCamel(pName),
+		CamelCasePlural:          strcase.ToLowerCamel(pName),
+	}
 	return out, nil
 }
 
@@ -180,27 +305,6 @@ func GenerateListVueFile(destDir, verticalName string, ctx ListTemplateVueCtx) (
 	return out, nil
 }
 
-/*
-// TODO: search statement is the following
-      // TODO: for each number field
-      if (this.search.{{.NumField}} && this.search.{{.NumField}} > 0) {
-        filter.$or.push({ {{.NumField}}: this.search.{{.NumField}} });
-      }
-      // TODO: for each text field
-
-      if (this.search.{{.StringField}} && this.search.{{.StringField}}.length > 0) {
-        let {{.StringField}} = this.search.{{.StringField}};
-        filter.$or.push(
-          // {
-            {{.StringField}}:{$like:`%${ {{.StringField}}}%`}},
-        );
-	  }
-
-ResourceRoute
-FormDefaultStatement //   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
-COLOverrideStatement //   {{.FieldName}}:"{{.field_colName}}", // TODO
-*/
-
 type TestCTX struct {
 	ImportPath               string
 	ModelNameTitleCase       string
@@ -209,8 +313,15 @@ type TestCTX struct {
 	DefaultFieldStatement    string // TODO: {{.FieldGOName}}: {{.TODOStringOrINToRGODefault}},
 }
 
-func NewTestCtx() (TestCTX, error) {
-	out := TestCTX{}
+func NewTestCtx(vertical VerticalMeta) (TestCTX, error) {
+	pName := pluralizer.Plural(vertical.Name)
+	out := TestCTX{
+		ImportPath:               "",
+		ModelNameTitleCase:       vertical.Name,
+		ModelNamePluralTitleCase: pName,
+		ModelNamePluralCamel:     strcase.ToCamel(pName),
+		DefaultFieldStatement:    "//TODO: manually",
+	}
 	return out, nil
 }
 

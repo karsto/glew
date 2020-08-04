@@ -37,6 +37,17 @@ func (t *GoType) IsNillable() bool {
 	return true
 }
 
+func (t *GoType) IsNumeric() bool {
+	switch t.Type.String() {
+
+	case "Int", "Int8", "Int16", "Int32",
+		"Int64", "Uint", "Uint8", "Uint16", "Uint32",
+		"Uint64", "Uintptr", "Float32", "Float64", "Complex64", "Complex128":
+		return true
+	}
+	return false
+}
+
 func (t *GoType) IsString() bool {
 	return t.Type.String() == "string"
 }

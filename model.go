@@ -14,7 +14,7 @@ import (
 
 // Vertical Meta - all the meta information needed to create a vertical.
 type VerticalMeta struct {
-	Name        string
+	Name        string //TODO: what is name vs model.name
 	Model       ModelMeta
 	CreateModel ModelMeta
 	UpdateModel ModelMeta
@@ -446,7 +446,7 @@ func GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []Vertic
 		}
 
 		if cfg.APICRUDTest {
-			ctx, err := NewTestCtx()
+			ctx, err := NewTestCtx(v)
 			if err != nil {
 				return out, err
 			}
@@ -470,7 +470,7 @@ func GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []Vertic
 		}
 
 		if cfg.VueListModel {
-			ctx, err := NewListTemplateVueCtx()
+			ctx, err := NewListTemplateVueCtx(v)
 			if err != nil {
 				return out, err
 			}
@@ -482,7 +482,7 @@ func GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []Vertic
 		}
 
 		if cfg.VueNewModel {
-			ctx, err := NewNewTemplateVueCtx()
+			ctx, err := NewNewTemplateVueCtx(v)
 			if err != nil {
 				return out, err
 			}

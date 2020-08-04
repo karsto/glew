@@ -4,13 +4,12 @@
       <section slot-scope="{ validate }">
         <form @submit.prevent v-on:keyup.enter="validate().then(postValidCheck)">
           <b-field grouped group-multiline>
-
-          //TODO:
+          {{range .ModelFieldsMeta}}
+               //TODO:
           // for each field in *EDIT* model
-          // {{.FieldRules}} ex : "min_value:1|numeric / min_value:0|numeric|required/ alpha_dash|required alpha_spaces
+          // {{.FieldRule}} ex : "min_value:1|numeric / min_value:0|numeric|required/ alpha_dash|required alpha_spaces
           // {{.FieldType}} ex: number
-
-            <ValidationProvider rules="{{.FieldRules}}" name="{{.JSONFieldName}}">
+            <ValidationProvider rules="{{.FieldRule}}" name="{{.JSONFieldName}}">
               <b-field
                 v-if="isEditMode"
                 slot-scope="{ errors, valid }"
@@ -22,12 +21,13 @@
                 <b-input
                   type="{{.FieldType}}"
                   :value="null"
-                  placeholder="{{.FieldPlaceHolder}}"
+                  placeholder="{{.FieldLabel}}"
                   v-model="form.{{.JSONFieldName}}"
                   readonly
                 ></b-input>
               </b-field>
             </ValidationProvider>
+            {{end}}
 
           </b-field>
           <b-button
@@ -86,7 +86,6 @@ const form = {
 
 let formDefaults = {
   {{.FormDefaultStatement}}
-  {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
 }
 
 let formMixin = formMixinBuilder(

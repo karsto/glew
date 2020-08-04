@@ -40,9 +40,9 @@ func (t *GoType) IsNillable() bool {
 func (t *GoType) IsNumeric() bool {
 	switch t.Type.String() {
 
-	case "Int", "Int8", "Int16", "Int32",
-		"Int64", "Uint", "Uint8", "Uint16", "Uint32",
-		"Uint64", "Uintptr", "Float32", "Float64", "Complex64", "Complex128":
+	case "int", "int8", "int16", "int32",
+		"int64", "uint", "uint8", "uint16", "uint32",
+		"uint64", "uintptr", "float32", "float64", "complex64", "complex128":
 		return true
 	}
 	return false

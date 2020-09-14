@@ -19,10 +19,10 @@ type IDB interface {
  	GetMigrationVersion() (int, error)
 }
 
-type Store struct {
-	// TODO: loop all
-	{{.ModelName}}
-}
+// type Store struct {
+// 	// TODO: loop all
+// ICRUDModel
+//}
 
 type ICRUD{{.ModelNameTitleCase}} interface
 {

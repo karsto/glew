@@ -351,7 +351,7 @@ func (_ *Backend) GenerateRESTTestFile(destDir, verticalName string, ctx TestCTX
 	testfileDest := path.Join(destDir, NewPaths().Tests)
 	fileName := fmt.Sprintf("%v_test.go", modelName)
 
-	b, err := ioutil.ReadFile("templates/test-template.go") // TODO: no magic strings
+	b, err := ioutil.ReadFile("templates/crud-api-tests.go") // TODO: no magic strings
 	if err != nil {
 		return FileContainer{}, err
 	}
@@ -461,7 +461,7 @@ func (_ *Backend) GenerateStoreFile(destDir, verticalName string, ctx StoreCtx) 
 	storeDest := path.Join(destDir, NewPaths().Store)
 	fileName := fmt.Sprintf("%v.go", storeName)
 
-	b, err := ioutil.ReadFile("templates/example-dal.go")
+	b, err := ioutil.ReadFile("templates/crud-store.go")
 	if err != nil {
 		return FileContainer{}, err
 	}

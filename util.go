@@ -175,3 +175,14 @@ func WriteFiles(fContainers []FileContainer) error {
 	}
 	return nil
 }
+
+
+// AggStrList - runs an aggFunc reduction over strings. func(index, vString, curResultString) -> addition to curResultString
+func AggStrList(strs []string, aggFunc func(int, string, string) string) string {
+	out := strings.Builder{}
+	for i, v := range strs {
+		agg := aggFunc(i, v, out.String())
+		out.WriteString(agg)
+	}
+	return out.String()
+}

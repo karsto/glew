@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
-	"strings"
 
 	"github.com/gertd/go-pluralize"
 	"github.com/iancoleman/strcase"
@@ -16,35 +15,6 @@ type SField struct {
 	Name string
 	Type string
 	Tags string
-}
-
-func GenerateStruct(structName string, fields []SField) (string, error) {
-	structTpl := `
-	type {{.StructName}} struct {
-		{{.FieldsStr}}
-	}
-	`
-
-	fields2 := []string{}
-	for _, f := range fields {
-		fields2 = append(fields2, fmt.Sprintf("%v %v `%v`", f.Name, f.Type, f.Tags))
-	}
-
-	listF := func(idx int, cur, res string) string {
-		return fmt.Sprintf("\t\t%v\n", cur)
-	}
-	fieldStr := AggStrList(fields2, listF)
-	fieldStr = strings.Trim(fieldStr, "\n")
-	ctx := map[string]string{
-		"StructName": structName,
-		"FieldsStr":  fieldStr,
-	}
-	content, err := ExecuteTemplate("structTpl", structTpl, ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return content, nil
 }
 
 type StoreTemplateVueCtx struct {
@@ -94,17 +64,6 @@ type NewTemplateVueCtx struct {
 	FormDefaultStatement     string
 }
 
-func GenerateMapStatement(types []GoType) string {
-	out := strings.Builder{}
-	for _, v := range types {
-		name := strcase.ToLowerCamel(v.Name)
-		stmt := fmt.Sprintf("%s:'%s',", name, name)
-		out.WriteString(stmt)
-	}
-	return out.String()
-
-}
-
 func NewNewTemplateVueCtx(vertical VerticalMeta) (NewTemplateVueCtx, error) {
 	modelMeta := GetModelFieldMeta(vertical)
 	pName := pluralizer.Plural(vertical.Name)
@@ -116,7 +75,7 @@ func NewNewTemplateVueCtx(vertical VerticalMeta) (NewTemplateVueCtx, error) {
 		CamelCaseModelName:       strcase.ToLowerCamel(vertical.Name),
 		CamelCasePluralModelName: strcase.ToLowerCamel(pName),
 		TitleCaseModelPluralName: strcase.ToCamel(pName),
-		FormMapStatment:          GenerateMapStatement(vertical.Model.Fields),          // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
+		FormMapStatment:          GenerateFieldMap(vertical.Model.Fields),          // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
 		FormDefaultStatement:     GenerateFormDefaultsStatement(vertical.Model.Fields), // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
 	}
 	return out, nil
@@ -167,36 +126,6 @@ type ListTemplateVueCtx struct {
 	SearchStatement          string
 }
 
-func GetDefaultRule(t GoType) string {
-	if t.IsNumeric() {
-		return "min_value:1|numeric"
-	}
-	if t.IsString() {
-		return "alpha_dash"
-	}
-	return "TODO: rule"
-}
-
-func GetFieldType(t GoType) string {
-	if t.IsNumeric() {
-		return "number"
-	}
-	if t.IsString() {
-		return "text"
-	}
-	return "TODO: field type"
-}
-
-func GetColMod(t GoType) string {
-	if t.IsNumeric() {
-		return "\nnumberic\nsortable\n"
-	}
-	if t.IsString() {
-		return "\nsortable\n"
-	}
-	return "TODO: field type"
-}
-
 func GetModelFieldMeta(vertical VerticalMeta) []ModelFieldMeta {
 	out := []ModelFieldMeta{}
 	for _, v := range vertical.Model.Fields {
@@ -211,55 +140,6 @@ func GetModelFieldMeta(vertical VerticalMeta) []ModelFieldMeta {
 		out = append(out, mfm)
 	}
 	return out
-}
-
-func GenerateCOLOverrideStatement(fields []GoType) string {
-	out := strings.Builder{}
-	for _, v := range fields {
-		leftCol := fmt.Sprintf("%s:'%s',\n", strcase.ToLowerCamel(v.Name), strcase.ToSnake(v.Name))
-		rightCol := fmt.Sprintf("%s:'%s',\n", strcase.ToSnake(v.Name), strcase.ToLowerCamel(v.Name))
-		out.WriteString(leftCol)
-		out.WriteString(rightCol)
-	}
-	return out.String()
-}
-
-func GenerateFormDefaultsStatement(fields []GoType) string {
-	out := strings.Builder{}
-	for _, v := range fields {
-		defstmt := fmt.Sprintf("%s: null,\n", strcase.ToLowerCamel(v.Name))
-		out.WriteString(defstmt)
-	}
-	return out.String()
-}
-
-func GenerateSearchStatement(fields []GoType) string {
-	out := strings.Builder{}
-
-	for _, v := range fields {
-		name := strcase.ToLowerCamel(v.Name)
-		if v.IsNumeric() {
-			stmt := fmt.Sprintf("\nif (this.search.%s && this.search.%s > 0) {\nfilter.$or.push({ %s: this.search.%s });\n}", name, name, name, name)
-			out.WriteString(stmt)
-		}
-		if v.IsString() {
-			txtTmpl := `
-			if (this.search.{{.StringField}} && this.search.{{.StringField}}.length > 0) {
-			let {{.StringField}} = this.search.{{.StringField}};
-			filter.$or.push(
-				{
-					{{.StringField}}:{$like:` + "`%{{.StringField}}%`}\n}),\n}\n"
-
-			stmt, err := ExecuteTemplate("searchTmpl", txtTmpl, map[string]interface{}{"StringField": name})
-			if err != nil {
-				println(err)
-			}
-
-			out.WriteString(stmt)
-		}
-
-	}
-	return out.String()
 }
 
 func NewListTemplateVueCtx(vertical VerticalMeta) (ListTemplateVueCtx, error) {
@@ -390,22 +270,6 @@ type ModelCtx struct {
 	CreateModel string
 	UpdateModel string
 	Utilities   string
-}
-
-func GeneratePage(structName string) (string, error) {
-	fields := []SField{
-		{
-			Name: "Records",
-			Type: fmt.Sprintf("[]%v", structName),
-			Tags: "json:\"records\"",
-		},
-		{
-			Name: "Page",
-			Type: "types.PagingInfo",
-			Tags: "json:\"page\"",
-		},
-	}
-	return GenerateStruct(structName+"Page", fields)
 }
 
 func GenerateModel(destDir, verticalName string, ctx ModelCtx) (FileContainer, error) {
@@ -556,92 +420,6 @@ func NewConfig() FeatureConfig {
 	}
 }
 
-func GenerateTrim(structName string, stringFieldNames []string) (string, error) {
-	const trimTmpl = `
-	func (m *{{.StructName}}) Trim(){ {{ range  $value := .StringFieldNames }}
-		m.{{$value}} = strings.TrimSpace(m.{{$value}}){{ end }}
-	}`
-	ctx := map[string]interface{}{
-		"StructName":       structName,
-		"StringFieldNames": stringFieldNames,
-	}
-	trimUtil, err := ExecuteTemplate("trim", trimTmpl, ctx)
-	if err != nil {
-		return "", err
-	}
-	return trimUtil, nil
-}
-
-func GenerateMapFunc(structName, targetName string, fields []string) (string, error) {
-	// toMapPl := `
-	// `
-	toMapPl := `
-	func (m {{.StructName}}) To{{.TargetName}}() {{.TargetName}} {
-		out := {{.TargetName}}{{print "{}"}}
-		{{.MapStatement}}
-		return out
-	}
-	`
-	listf := func(idx int, cur, res string) string {
-		out := fmt.Sprintf("m.%v = out.%v\n", cur, cur)
-		return out
-	}
-	mapStmt := AggStrList(fields, listf)
-	mapStmt = strings.Trim(mapStmt, "\n")
-	ctx := map[string]interface{}{
-		"StructName":   structName,
-		"TargetName":   targetName,
-		"MapStatement": mapStmt,
-	}
-	initFunc, err := ExecuteTemplate("toMapPl", toMapPl, ctx)
-	if err != nil {
-		return "", err
-	}
-	return initFunc, nil
-
-}
-
-// nilstatements[fieldname]newStatement
-func GenerateInit(structName string, nilStatements map[string]string) (string, error) {
-	const nilTmpl = `
-	func (m *{{.StructName}}) Initialize() { {{ range $key, $value := .NilStatements }}
-		if m.{{$key}} == nil {
-			m.{{$key}} = {{$value}}
-		}
-	{{ end }}
-	}`
-	ctx := map[string]interface{}{
-		"StructName":    structName,
-		"NilStatements": nilStatements,
-	}
-	initFunc, err := ExecuteTemplate("niltpl", nilTmpl, ctx)
-	if err != nil {
-		return "", err
-	}
-	return initFunc, nil
-}
-
-func GenerateNew(structName string, nilStatements map[string]string) (string, error) {
-	const newTmpl = `
-	func New{{.StructName}}()*{{.StructName}} {
-		m := {{.StructName}}{}{{ range $key, $value := .NilStatements }}
-		if m.{{$key}} == nil {
-			m.{{$key}} = {{$value}}
-		}
-	{{ end }}
-	return &m
-	}`
-	ctx := map[string]interface{}{
-		"StructName":    structName,
-		"NilStatements": nilStatements,
-	}
-	initFunc, err := ExecuteTemplate("newTmpl", newTmpl, ctx)
-	if err != nil {
-		return "", err
-	}
-	return initFunc, nil
-}
-
 type SQLCtx struct {
 	CreateStatements []string
 	TableName        string
@@ -649,137 +427,6 @@ type SQLCtx struct {
 	PutFields        []string
 	DBFields         []string
 	IDColName        string
-}
-
-// aggFun index,vString, resultString -> additionToResultIfAny
-func AggStrList(strs []string, aggFunc func(int, string, string) string) string {
-	out := strings.Builder{}
-	for i, v := range strs {
-		agg := aggFunc(i, v, out.String())
-		out.WriteString(agg)
-	}
-	return out.String()
-}
-
-func GenerateSQL(ctx SQLCtx) (SQLStrings, error) {
-	out := SQLStrings{}
-
-	listF := func(idx int, cur, res string) string {
-		return fmt.Sprintf("\t\t\t%v,\n", cur)
-	}
-	insertColList := AggStrList(ctx.InsertFields, listF)
-	insertColList = strings.Trim(insertColList, ",\n")
-	listVal := func(idx int, cur, res string) string {
-		return fmt.Sprintf("\t\t$%v,\n", cur)
-	}
-	insertValListStr := AggStrList(ctx.InsertFields, listVal)
-	insertValListStr = strings.Trim(insertValListStr, ",\n")
-	insertCtx := map[string]string{
-		"TableName":        ctx.TableName,
-		"InsertColList":    insertColList,
-		"InsertValListStr": insertValListStr,
-		"IDColName":        ctx.IDColName,
-	}
-	const insertTmpl = `
-	INSERT INTO {{.TableName}} (
-{{.InsertColList}}
-	VALUES(
-{{.InsertValListStr}}
-	)
-	RETURNING {{.IDColName}}
-	`
-	insertSQL, err := ExecuteTemplate("insertSQL", insertTmpl, insertCtx)
-	if err != nil {
-		return out, err
-	}
-	out.Insert = insertSQL
-
-	readColList := AggStrList(ctx.DBFields, listF)
-	readColList = strings.Trim(readColList, ",\n")
-	listColCtx := map[string]string{
-		"TableName":   ctx.TableName,
-		"ReadColList": readColList,
-	}
-	const listTmpl = `
-		SELECT
-{{.ReadColList}}
-		FROM {{.TableName}}
-		`
-	listSQL, err := ExecuteTemplate("listSQL", listTmpl, listColCtx)
-	if err != nil {
-		return out, err
-	}
-	out.List = listSQL
-
-	readCtx := map[string]string{
-		"TableName":   ctx.TableName,
-		"ReadColList": readColList,
-		"IDColName":   ctx.IDColName,
-	}
-	const readTmpl = `
-		SELECT
-{{.ReadColList}}
-		FROM  {{.TableName}} WHERE tenant_id = $1 AND {{.IDColName}} = $2`
-	readSQL, err := ExecuteTemplate("readSQL", readTmpl, readCtx)
-	if err != nil {
-		return out, err
-	}
-	out.Read = readSQL
-
-	updateF := func(idx int, cur, res string) string {
-		return fmt.Sprintf("\t\t%v = $%v,\n", cur, idx+3)
-	}
-	putColList := AggStrList(ctx.PutFields, updateF)
-	putColList = strings.Trim(putColList, ",\n")
-	putCtx := map[string]string{
-		"TableName":  ctx.TableName,
-		"PutColList": putColList,
-		"IDColName":  ctx.IDColName,
-	}
-	const putTmpl = `
-	UPDATE {{.TableName}} SET
-{{.PutColList}}
-	WHERE tenant_id = $1 AND {{.IDColName}} = $2
-	`
-	putSQL, err := ExecuteTemplate("putSQL", putTmpl, putCtx)
-	if err != nil {
-		return out, err
-	}
-	out.Put = putSQL
-
-	const deleteTmpl = `
-	DELETE FROM {{.TableName}} WHERE tenant_id = ? AND {{.IDColName}} IN (?)
-	`
-	deleteSQL, err := ExecuteTemplate("deleteSQL", deleteTmpl, ctx)
-	if err != nil {
-		return out, err
-	}
-	out.Delete = deleteSQL
-
-	createColList := AggStrList(ctx.CreateStatements, listF)
-	createColList = strings.Trim(createColList, ",\n")
-	createCtx := map[string]string{
-		"TableName":     ctx.TableName,
-		"CreateColList": createColList,
-	}
-	const createTblTmpl = `
-	CREATE TABLE {{.TableName}} (
-{{.CreateColList}}
-	);`
-	createTblSQL, err := ExecuteTemplate("createTblSQL", createTblTmpl, createCtx)
-	if err != nil {
-		return out, err
-	}
-	out.CreateTable = createTblSQL
-
-	const dropTblTmpl = `DROP TABLE {{.TableName}};`
-	dropTblSQL, err := ExecuteTemplate("dropTblSQL", dropTblTmpl, ctx)
-	if err != nil {
-		return out, err
-	}
-	out.DropTable = dropTblSQL
-
-	return out, err
 }
 
 type Route struct {
@@ -860,46 +507,4 @@ type DBTypeCtx struct {
 	Default    string
 	IsPK       bool
 	IsNullable bool
-}
-
-func GetCommon(left, right []GoType) []string {
-	common := map[string]bool{}
-	for _, v := range left {
-		common[v.Name] = false
-	}
-
-	for _, v := range right {
-		if _, found := common[v.Name]; found {
-			common[v.Name] = true
-		} else {
-			common[v.Name] = false
-		}
-	}
-
-	out := []string{}
-	for k, v := range common {
-		if v {
-			out = append(out, k)
-		}
-	}
-	return out
-}
-
-func GenerateCreateStatement(t DBTypeCtx) string {
-	out := strings.Builder{}
-	out.WriteString(t.Name)
-	out.WriteString(" ")
-	out.WriteString(t.Type)
-	out.WriteString(" ")
-	if !t.IsNullable {
-		out.WriteString("NOT NULL ")
-	}
-	if t.IsPK {
-		out.WriteString("PRIMARY KEY ")
-	}
-	if len(t.Default) > 0 {
-		out.WriteString("DEFAULT ")
-		out.WriteString(t.Default)
-	}
-	return out.String()
 }

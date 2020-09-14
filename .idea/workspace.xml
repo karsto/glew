@@ -2,31 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="10247412-9405-4b0d-b13c-fba47f7a24ff" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/templates/crud-service.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/crud-store.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/cli/root.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/cli/tools/migrate.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/ext-gin/controllers/status.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/ext-gin/ctx-extensions.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/ext-gin/middleware/error_body_logger.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/ext-gin/middleware/request_logger.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/ext-gin/middleware/response_logger.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/ext-gin/model.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/files/model.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/sqlutil/model.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/types/common.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/types/delete_query.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/types/int_slice.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/types/jsonb_map.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/types/list_request.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/types/paging_info.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/types/string_slice.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/types/web_error.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/common/validation/validator.go" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend-gen.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sql-gen.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/features.go" beforeDir="false" afterPath="$PROJECT_DIR$/features.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/example-controller.go" beforeDir="false" afterPath="$PROJECT_DIR$/templates/controller.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/example-dal.go" beforeDir="false" afterPath="$PROJECT_DIR$/templates/Archive/example-dal.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/test-template.go" beforeDir="false" afterPath="$PROJECT_DIR$/templates/crud-tests.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/util.go" beforeDir="false" afterPath="$PROJECT_DIR$/util.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -82,11 +62,12 @@
     <property name="vue.rearranger.settings.migration" value="true" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/templates/Archive" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/templates" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/templates/Archive" />
     </key>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
@@ -102,6 +83,14 @@
     </state>
     <state x="702" y="271" key="SettingsEditor/-1440.-505.1440.2560/0.0.2560.1440@0.0.2560.1440" timestamp="1600108330269" />
     <state x="702" y="271" key="SettingsEditor/-3360.407.1920.1057/-1440.-701.1440.2537/0.0.2560.1440@0.0.2560.1440" timestamp="1599714975926" />
+    <state x="899" y="283" width="761" height="873" key="find.popup" timestamp="1600121531220">
+      <screen x="0" y="0" width="2560" height="1440" />
+    </state>
+    <state x="899" y="283" width="761" height="873" key="find.popup/-1440.-505.1440.2560/0.0.2560.1440@0.0.2560.1440" timestamp="1600121531220" />
+    <state x="841" y="387" width="875" height="663" key="recent.locations.popup" timestamp="1600122033086">
+      <screen x="0" y="0" width="2560" height="1440" />
+    </state>
+    <state x="841" y="387" width="875" height="663" key="recent.locations.popup/-1440.-505.1440.2560/0.0.2560.1440@0.0.2560.1440" timestamp="1600122033086" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -110,6 +99,16 @@
           <url>file://$PROJECT_DIR$/templates/crud-store.go</url>
           <line>2</line>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/backend-gen.go</url>
+          <line>43</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/backend-gen.go</url>
+          <line>202</line>
+          <option name="timeStamp" value="3" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

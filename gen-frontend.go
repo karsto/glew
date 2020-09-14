@@ -1,11 +1,16 @@
 package glew
 
+import (
+	"fmt"
+	"strings"
 
+	"github.com/iancoleman/strcase"
+)
 
-type Frontend struct {}
+type Frontend struct{}
 
 // GenerateFieldMap - generates json field mappings for field:'field'
-func  (_ *Frontend) GenerateFieldMap(types []GoType) string {
+func (_ *Frontend) GenerateFieldMap(types []GoType) string {
 	out := strings.Builder{}
 	for _, v := range types {
 		name := strcase.ToLowerCamel(v.Name)

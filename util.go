@@ -10,6 +10,12 @@ import (
 	"github.com/karsto/glew/common/files"
 )
 
+type SField struct {
+	Name string
+	Type string
+	Tags string
+}
+
 type GoType struct {
 	Name string
 	Type reflect.Type
@@ -175,7 +181,6 @@ func WriteFiles(fContainers []FileContainer) error {
 	}
 	return nil
 }
-
 
 // AggStrList - runs an aggFunc reduction over strings. func(index, vString, curResultString) -> addition to curResultString
 func AggStrList(strs []string, aggFunc func(int, string, string) string) string {

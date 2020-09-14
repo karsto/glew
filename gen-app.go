@@ -9,26 +9,25 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// TODO: Refactor and consolidate file generate pattern?
-
-type SField struct {
-	Name string
-	Type string
-	Tags string
+type App struct {
+	db       DB
+	frontend Frontend
+	backend  Backend
 }
 
 type StoreTemplateVueCtx struct {
 	Resource string
 }
 
-func NewStoreTemplateVueCtx(vertical VerticalMeta) (StoreTemplateVueCtx, error) {
+func (_ *App) NewStoreTemplateVueCtx(vertical VerticalMeta) (StoreTemplateVueCtx, error) {
 	out := StoreTemplateVueCtx{
 		Resource: strcase.ToKebab(vertical.Name),
 	}
 	return out, nil
 }
 
-func GenerateStoreVueFile(destDir, verticalName string, ctx StoreTemplateVueCtx) (FileContainer, error) {
+// GenerateStoreVueFile - generates glue vue front end data store file that enables api calls to be made by the vue app
+func (_ *App) GenerateStoreVueFile(destDir, verticalName string, ctx StoreTemplateVueCtx) (FileContainer, error) {
 	modelName := strcase.ToLowerCamel(verticalName)
 	uiStoreDest := path.Join(destDir, NewPaths().UIStore)
 	fileName := fmt.Sprintf("%v.js", modelName)
@@ -64,8 +63,8 @@ type NewTemplateVueCtx struct {
 	FormDefaultStatement     string
 }
 
-func NewNewTemplateVueCtx(vertical VerticalMeta) (NewTemplateVueCtx, error) {
-	modelMeta := GetModelFieldMeta(vertical)
+func (app *App) NewNewTemplateVueCtx(vertical VerticalMeta) (NewTemplateVueCtx, error) {
+	modelMeta := app.GetModelFieldMeta(vertical)
 	pName := pluralizer.Plural(vertical.Name)
 	out := NewTemplateVueCtx{
 		ModelFieldsMeta:          modelMeta,
@@ -75,13 +74,14 @@ func NewNewTemplateVueCtx(vertical VerticalMeta) (NewTemplateVueCtx, error) {
 		CamelCaseModelName:       strcase.ToLowerCamel(vertical.Name),
 		CamelCasePluralModelName: strcase.ToLowerCamel(pName),
 		TitleCaseModelPluralName: strcase.ToCamel(pName),
-		FormMapStatment:          GenerateFieldMap(vertical.Model.Fields),          // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
-		FormDefaultStatement:     GenerateFormDefaultsStatement(vertical.Model.Fields), // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
+		FormMapStatment:          app.frontend.GenerateFieldMap(vertical.Model.Fields),              // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
+		FormDefaultStatement:     app.frontend.GenerateFormDefaultsStatement(vertical.Model.Fields), // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
 	}
 	return out, nil
 }
 
-func GenerateNewVueFile(destDir, verticalName string, ctx NewTemplateVueCtx) (FileContainer, error) {
+// GenerateNewVueFile - generates a "New Model" form for the vue app.
+func (_ *App) GenerateNewVueFile(destDir, verticalName string, ctx NewTemplateVueCtx) (FileContainer, error) {
 	modelName := strcase.ToLowerCamel(verticalName)
 	newVueDest := path.Join(destDir, NewPaths().UIComponents)
 	fileName := fmt.Sprintf("new%v.vue", modelName)
@@ -126,15 +126,16 @@ type ListTemplateVueCtx struct {
 	SearchStatement          string
 }
 
-func GetModelFieldMeta(vertical VerticalMeta) []ModelFieldMeta {
+// TODO: move to frontend ?
+func (app *App) GetModelFieldMeta(vertical VerticalMeta) []ModelFieldMeta {
 	out := []ModelFieldMeta{}
 	for _, v := range vertical.Model.Fields {
 		mfm := ModelFieldMeta{
-			FieldRule:     GetDefaultRule(v),
+			FieldRule:     app.frontend.GetDefaultRule(v),
 			FieldName:     strcase.ToLowerCamel(v.Name),
 			FieldLabel:    "TODO:" + v.Name,
-			FieldType:     GetFieldType(v),
-			ColModifers:   GetColMod(v),
+			FieldType:     app.frontend.GetFieldType(v),
+			ColModifers:   app.frontend.GetColMod(v),
 			JSONFieldName: strcase.ToLowerCamel(v.Name),
 		}
 		out = append(out, mfm)
@@ -142,15 +143,15 @@ func GetModelFieldMeta(vertical VerticalMeta) []ModelFieldMeta {
 	return out
 }
 
-func NewListTemplateVueCtx(vertical VerticalMeta) (ListTemplateVueCtx, error) {
-	fieldsmeta := GetModelFieldMeta(vertical)
+func (app *App) NewListTemplateVueCtx(vertical VerticalMeta) (ListTemplateVueCtx, error) {
+	fieldsmeta := app.GetModelFieldMeta(vertical)
 	pName := pluralizer.Plural(vertical.Name)
 	out := ListTemplateVueCtx{
 		ModelFieldsMeta:          fieldsmeta,
-		COLOverrideStatement:     GenerateCOLOverrideStatement(vertical.Model.Fields),
+		COLOverrideStatement:     app.frontend.GenerateCOLOverrideStatement(vertical.Model.Fields),
 		ResourceRoute:            strcase.ToKebab(vertical.Name),
-		FormDefaultStatement:     GenerateFormDefaultsStatement(vertical.Model.Fields),
-		SearchStatement:          GenerateSearchStatement(vertical.Model.Fields),
+		FormDefaultStatement:     app.frontend.GenerateFormDefaultsStatement(vertical.Model.Fields),
+		SearchStatement:          app.frontend.GenerateSearchStatement(vertical.Model.Fields),
 		ModelTitleName:           strcase.ToCamel(vertical.Name),
 		TitleCaseModelName:       strcase.ToCamel(vertical.Name),
 		CamelCaseModelName:       strcase.ToLowerCamel(vertical.Name),
@@ -160,7 +161,8 @@ func NewListTemplateVueCtx(vertical VerticalMeta) (ListTemplateVueCtx, error) {
 	return out, nil
 }
 
-func GenerateListVueFile(destDir, verticalName string, ctx ListTemplateVueCtx) (FileContainer, error) {
+// GenerateListVueFile - Generates a page-able list view vue file for a given model
+func (_ *App) GenerateListVueFile(destDir, verticalName string, ctx ListTemplateVueCtx) (FileContainer, error) {
 	modelName := pluralizer.Plural(verticalName)
 	modelName = strcase.ToLowerCamel(modelName)
 	listVueDest := path.Join(destDir, NewPaths().UIComponents)
@@ -193,7 +195,7 @@ type TestCTX struct {
 	DefaultFieldStatement    string // TODO: {{.FieldGOName}}: {{.TODOStringOrINToRGODefault}},
 }
 
-func NewTestCtx(vertical VerticalMeta) (TestCTX, error) {
+func (_ *App) NewTestCtx(vertical VerticalMeta) (TestCTX, error) {
 	pName := pluralizer.Plural(vertical.Name)
 	out := TestCTX{
 		ImportPath:               "",
@@ -205,7 +207,8 @@ func NewTestCtx(vertical VerticalMeta) (TestCTX, error) {
 	return out, nil
 }
 
-func GenerateRESTTestFile(destDir, verticalName string, ctx TestCTX) (FileContainer, error) {
+// GenerateRESTTestFile - generates a backend api CRUD test file
+func (_ *App) GenerateRESTTestFile(destDir, verticalName string, ctx TestCTX) (FileContainer, error) {
 	modelName := strcase.ToSnake(verticalName)
 	testfileDest := path.Join(destDir, NewPaths().Tests)
 	fileName := fmt.Sprintf("%v_test.go", modelName)
@@ -233,7 +236,8 @@ type BaseAPPCTX struct {
 	ImportPath string
 }
 
-func GenerateBaseApp(destDir, appName string, ctx BaseAPPCTX) ([]FileContainer, error) {
+// GenerateBaseApp - proccess all the near static templates for the base of the application.
+func (_ *App) GenerateBaseApp(destDir, appName string, ctx BaseAPPCTX) ([]FileContainer, error) {
 	files, err := ReadFiles("static", destDir)
 	if err != nil {
 		return files, err
@@ -272,7 +276,8 @@ type ModelCtx struct {
 	Utilities   string
 }
 
-func GenerateModel(destDir, verticalName string, ctx ModelCtx) (FileContainer, error) {
+// GenerateModel - generates return, create, update model as well as some boiler plate helper functions - mapping between types, trim, inits
+func (_ *App) GenerateModel(destDir, verticalName string, ctx ModelCtx) (FileContainer, error) {
 	modelName := strcase.ToSnake(verticalName)
 	modelDest := path.Join(destDir, NewPaths().Model)
 	fileName := fmt.Sprintf("%v.go", modelName)
@@ -315,7 +320,8 @@ type StoreCtx struct {
 	SQL                      SQLStrings
 }
 
-func GenerateStoreFile(destDir, verticalName string, ctx StoreCtx) (FileContainer, error) {
+// GenerateStoreFile - generates a golang ICRUD{{Model}} interface and implementation.
+func (_ *App) GenerateStoreFile(destDir, verticalName string, ctx StoreCtx) (FileContainer, error) {
 	storeName := strcase.ToSnake(verticalName)
 	storeDest := path.Join(destDir, NewPaths().Store)
 	fileName := fmt.Sprintf("%v.go", storeName)
@@ -341,7 +347,7 @@ func GenerateStoreFile(destDir, verticalName string, ctx StoreCtx) (FileContaine
 
 var pluralizer = pluralize.NewClient() // save the bitsy
 
-func NewControllerCtx(verticalName string, baseCTX BaseAPPCTX) ControllerCtx {
+func (_ *App) NewControllerCtx(verticalName string, baseCTX BaseAPPCTX) ControllerCtx {
 	pluralName := pluralizer.Plural(verticalName)
 	out := ControllerCtx{
 		ModelNameTitleCase:       strcase.ToCamel(verticalName),
@@ -365,8 +371,8 @@ type ControllerCtx struct {
 	TODOProjectImportPath    string
 }
 
-// returns Controller name, content, error
-func GenerateControllerFile(destDir, verticalName string, ctx ControllerCtx) (FileContainer, error) {
+// GenerateControllerFile - generates a models gin web controller
+func (_ *App) GenerateControllerFile(destDir, verticalName string, ctx ControllerCtx) (FileContainer, error) {
 	constrollerDest := path.Join(destDir, NewPaths().Controllers)
 	name := strcase.ToSnake(verticalName)
 	fileName := fmt.Sprintf("%v.go", name)
@@ -439,7 +445,7 @@ type JSRouterCTX struct {
 	Routes []Route
 }
 
-func NewJSRouterCTX(verticals []VerticalMeta) (JSRouterCTX, error) {
+func (_ *App) NewJSRouterCTX(verticals []VerticalMeta) (JSRouterCTX, error) {
 	out := JSRouterCTX{
 		Routes: []Route{},
 	}
@@ -456,7 +462,8 @@ func NewJSRouterCTX(verticals []VerticalMeta) (JSRouterCTX, error) {
 	return out, nil
 }
 
-func GenerateJSRouterFile(destDir string, ctx JSRouterCTX) (FileContainer, error) {
+// GenerateJSRouterFile - generates a vue router that supports crud operations
+func (_ *App) GenerateJSRouterFile(destDir string, ctx JSRouterCTX) (FileContainer, error) {
 	routerDest := path.Join(destDir, NewPaths().UI)
 	fileName := fmt.Sprintf("%v.js", "router") // TODO: magic strings
 
@@ -479,7 +486,8 @@ func GenerateJSRouterFile(destDir string, ctx JSRouterCTX) (FileContainer, error
 	return out, nil
 }
 
-func GenerateMigrationFiles(destDir, verticalName string, sql SQLStrings, dbScriptIdxStart int) ([]FileContainer, error) {
+// GenerateMigrationFiles - generates sql db up and down scripts for a given model.
+func (_ *App) GenerateMigrationFiles(destDir, verticalName string, sql SQLStrings, dbScriptIdxStart int) ([]FileContainer, error) {
 	migrationsDest := path.Join(destDir, NewPaths().Core)
 	verticalName = strcase.ToSnake(verticalName)
 
@@ -501,10 +509,143 @@ func GenerateMigrationFiles(destDir, verticalName string, sql SQLStrings, dbScri
 	return out, nil
 }
 
-type DBTypeCtx struct {
-	Name       string
-	Type       string
-	Default    string
-	IsPK       bool
-	IsNullable bool
+// GenerateApp - takes in the required information to generate a basic crud app and based on the feature flags enabled, generates those features.
+func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []VerticalMeta, baseCtx BaseAPPCTX) ([]FileContainer, error) {
+	// copy base
+	destDir := destRoot //  filepath.Join(destRoot, "base-project")
+	out := []FileContainer{}
+	if cfg.CopyBase {
+		files, err := app.GenerateBaseApp(destRoot, appName, baseCtx)
+		if err != nil {
+			return out, err
+		}
+		out = append(out, files...)
+	}
+
+	verticalsOut := []GeneratedVertical{}
+	migrationStartId := 2 // TODO: read from directory automatically
+
+	for _, v := range verticals {
+		verticalOut := GeneratedVertical{}
+
+		ctx := app.db.NewSQLCtx(v)
+		sql, err := app.db.GenerateSQL(ctx)
+		if err != nil {
+			return out, err
+		}
+		verticalOut.SQL = sql
+
+		if cfg.Store {
+			ctx := NewStoreCtx(v, sql, baseCtx)
+			storeFile, err := app.GenerateStoreFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.Store = storeFile
+		}
+
+		if cfg.Migrations {
+			migrations, err := app.GenerateMigrationFiles(destDir, v.Name, sql, migrationStartId)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.Migrations = append(verticalOut.Migrations, migrations...)
+			migrationStartId += 1
+		}
+
+		if cfg.Controllers {
+			ctx := app.NewControllerCtx(v.Name, baseCtx)
+			controllerFile, err := app.GenerateControllerFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.Controller = controllerFile
+		}
+		if cfg.Models {
+			ctx, err := app.backend.NewModelCtx(v)
+			if err != nil {
+				return out, err
+			}
+			model, err := app.GenerateModel(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.Model = model
+		}
+
+		if cfg.APICRUDTest {
+			ctx, err := app.NewTestCtx(v)
+			if err != nil {
+				return out, err
+			}
+			crudTestFile, err := app.GenerateRESTTestFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.APICRUDTests = crudTestFile
+		}
+
+		if cfg.JSStore {
+			ctx, err := app.NewStoreTemplateVueCtx(v)
+			if err != nil {
+				return out, err
+			}
+			jsStoreFile, err := app.GenerateStoreVueFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.JSStore = jsStoreFile
+		}
+
+		if cfg.VueListModel {
+			ctx, err := app.NewListTemplateVueCtx(v)
+			if err != nil {
+				return out, err
+			}
+			listFile, err := app.GenerateListVueFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.VueListModel = listFile
+		}
+
+		if cfg.VueNewModel {
+			ctx, err := app.NewNewTemplateVueCtx(v)
+			if err != nil {
+				return out, err
+			}
+			newVueFile, err := app.GenerateNewVueFile(destDir, v.Name, ctx)
+			if err != nil {
+				return out, err
+			}
+			verticalOut.VueNewModel = newVueFile
+		}
+
+		verticalsOut = append(verticalsOut, verticalOut)
+	}
+
+	for _, v := range verticalsOut {
+		out = append(out, v.Migrations...)
+		out = append(out, v.Controller)
+		out = append(out, v.Store)
+		out = append(out, v.Model)
+		out = append(out, v.APICRUDTests)
+		out = append(out, v.JSStore)
+		out = append(out, v.VueListModel)
+		out = append(out, v.VueNewModel)
+	}
+
+	if cfg.JSRouter {
+		ctx, err := app.NewJSRouterCTX(verticals)
+		if err != nil {
+			return out, err
+		}
+		jsRouter, err := app.GenerateJSRouterFile(destDir, ctx)
+		if err != nil {
+			return out, err
+		}
+		out = append(out, jsRouter)
+	}
+
+	return out, nil
 }

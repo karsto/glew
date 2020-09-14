@@ -1,5 +1,20 @@
 package glew
 
+import (
+	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/iancoleman/strcase"
+)
+
+type DBTypeCtx struct {
+	Name       string
+	Type       string
+	Default    string
+	IsPK       bool
+	IsNullable bool
+}
 
 type DB struct {
 }
@@ -146,4 +161,121 @@ func (_ *DB) GenerateCreateStatement(t DBTypeCtx) string {
 	return out.String()
 }
 
+// GetSQLType - maps golang data type to corresponding postgres sql data type to be used in a create statement.
+func (_ *DB) GetSQLType(t reflect.Type) string {
+	out := "TODO"
+	switch t.Kind() {
+	case reflect.Int8, reflect.Uint8, reflect.Int16:
+		out = "smallint"
+	case reflect.Uint16, reflect.Int32:
+		out = "integer"
+	case reflect.Uint32, reflect.Int64, reflect.Int:
+		out = "bigint"
+	case reflect.Uint, reflect.Uint64:
+		out = "bigint"
+	case reflect.Float32:
+		out = "real"
+	case reflect.Float64:
+		out = "precision"
+	case reflect.Bool:
+		out = "boolean"
+	case reflect.String:
+		out = "text"
+		// TODO:
+	// case  reflect. []byte:
+	// 	out = "bytea"
+	case reflect.Struct, reflect.Array, reflect.Map:
+		out = "jsonb"
+		// TODO:
+		// case time.Time:
+		// 	out = "timestamptz"
+		// case net.IP:
+		// 	out = "inet"
+		// case net.IPNet:
+		// 	out = ""
+	}
+	return out
+}
 
+// NewDBTypeCtx - looks at the struct tags - `db`, and `db2` to get additional information or overrides of sql specific field flags.
+// `db` Tag - specificy the column name. Hijaking db struct tag from pgx.
+// `db2` Tag - custom tag from glew
+// db2:type - specify or override the db column type.
+// db2:default - specify the db default value if any.
+// db2:pk - set to enable primary key statement
+// db2:notnull - set to enable not null statement.
+
+func (db *DB) NewDBTypeCtx(t GoType) DBTypeCtx {
+	name := t.Name
+	if v, found := t.Tags.Lookup("db"); found {
+		// TODO: nesting tags
+		name = v
+	}
+	oType := db.GetSQLType(t.Type)
+	if v, found := t.Tags.Lookup("db2:type"); found {
+		// TODO: nesting tags
+		oType = v
+	}
+	defaultVal := ""
+	if v, found := t.Tags.Lookup("db2:default"); found {
+		// TODO: nesting tags
+		defaultVal = v
+	}
+	isPK := false
+	if _, found := t.Tags.Lookup("db2:pk"); found {
+		// TODO: nesting tags
+		isPK = true
+	}
+	isNullable := false
+	if _, found := t.Tags.Lookup("db2:notnull"); found {
+		// TODO: nesting tags
+		isNullable = true
+	}
+	out := DBTypeCtx{
+		Name:       name,
+		Type:       oType,
+		Default:    defaultVal,
+		IsPK:       isPK,
+		IsNullable: isNullable,
+	}
+	return out
+}
+
+// NewSQLCtx - takes in the metadata for a given vertical and creates all related sql fields.
+func (db *DB) NewSQLCtx(vertical VerticalMeta) SQLCtx {
+	dbFields := []string{}
+	createStatements := []string{}
+	idColName := ".TODOidColName"
+	for _, v := range vertical.Model.Fields {
+		dbCtx := db.NewDBTypeCtx(v)
+		if dbCtx.IsPK {
+			idColName = dbCtx.Name
+		}
+		crtStmt := db.GenerateCreateStatement(dbCtx)
+		createStatements = append(createStatements, crtStmt)
+		dbFields = append(dbFields, dbCtx.Name)
+	}
+
+	insertFields := []string{}
+	for _, v := range vertical.CreateModel.Fields {
+		dbCtx := db.NewDBTypeCtx(v)
+		insertFields = append(insertFields, dbCtx.Name)
+	}
+
+	putFields := []string{}
+	for _, v := range vertical.CreateModel.Fields {
+		dbCtx := db.NewDBTypeCtx(v)
+		putFields = append(putFields, dbCtx.Name)
+	}
+
+	tableName := strcase.ToSnake(vertical.Name)
+	out := SQLCtx{
+		CreateStatements: createStatements,
+		TableName:        tableName,
+		DBFields:         dbFields,
+		IDColName:        idColName,
+		InsertFields:     insertFields,
+		PutFields:        putFields,
+	}
+	return out
+}

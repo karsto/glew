@@ -2,6 +2,7 @@ package glew
 
 import (
 	"fmt"
+	"path"
 	"reflect"
 	"strings"
 
@@ -278,4 +279,36 @@ func (db *DB) NewSQLCtx(vertical VerticalMeta) SQLCtx {
 		PutFields:        putFields,
 	}
 	return out
+}
+
+type SQLCtx struct {
+	CreateStatements []string
+	TableName        string
+	InsertFields     []string
+	PutFields        []string
+	DBFields         []string
+	IDColName        string
+}
+
+// GenerateMigrationFiles - generates sql db up and down scripts for a given model.
+func (_ *DB) GenerateMigrationFiles(destDir, verticalName string, sql SQLStrings, dbScriptIdxStart int) ([]FileContainer, error) {
+	migrationsDest := path.Join(destDir, NewPaths().Core)
+	verticalName = strcase.ToSnake(verticalName)
+
+	out := []FileContainer{}
+	fileName := fmt.Sprintf("%v_%s.up.sql", dbScriptIdxStart, verticalName)
+	out = append(out, FileContainer{
+		Content:     sql.CreateTable,
+		Destination: migrationsDest,
+		FileName:    fileName,
+	})
+
+	fileName = fmt.Sprintf("%v_%s.drop.sql", dbScriptIdxStart, verticalName)
+	out = append(out, FileContainer{
+		Content:     sql.DropTable,
+		Destination: migrationsDest,
+		FileName:    fileName,
+	})
+
+	return out, nil
 }

@@ -40,13 +40,18 @@ func TestPlayground(t *testing.T) {
 		appName - the name of the application and docker runtime
 		importPath - application go import directory, aka the directory of the app to reference itself
 	*/
+	app := App{
+		db:       DB{},
+		frontend: Frontend{},
+		backend:  Backend{},
+	}
 	destDir := "out"
 	appName := "testApp"
 	importPath := "github.com/ashtonian/glew/out"
 
 	verticals := []VerticalMeta{}
 
-	vertical, err := GenerateVerticalMeta(TestModel{}, "TestVertical", CreateTestModel{}, UpdateTestModel{})
+	vertical, err := app.GenerateVerticalMeta(TestModel{}, "TestVertical", CreateTestModel{}, UpdateTestModel{})
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +63,7 @@ func TestPlayground(t *testing.T) {
 	}
 
 	features := NewConfig()
-	files, err := GenerateApp(features, destDir, appName, verticals, ctx)
+	files, err := app.GenerateApp(features, destDir, appName, verticals, ctx)
 
 	if err != nil {
 		panic(err)

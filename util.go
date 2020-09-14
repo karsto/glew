@@ -10,12 +10,6 @@ import (
 	"github.com/karsto/glew/common/files"
 )
 
-type SField struct {
-	Name string
-	Type string
-	Tags string
-}
-
 type GoType struct {
 	Name string
 	Type reflect.Type

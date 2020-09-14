@@ -13,7 +13,7 @@ import (
 )
 
 type {{.ModelNameTitleCase}}Controller struct {
-	db     *store.Store
+	service     IService{{.ModelNamePluralTitleCase}}
 	parser *rql.Parser
 }
 
@@ -63,7 +63,7 @@ func (c *{{.ModelNameTitleCase}}Controller) Create(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.db.Create{{.ModelNameTitleCase}}(s.TenantID, m)
+	res, err := c.service.Create(s.TenantID, m)
 	if err != nil {
 		ctx.Error(err).SetType(gin.ErrorTypePrivate)
 		return
@@ -105,7 +105,7 @@ func (c *{{.ModelNameTitleCase}}Controller) List(ctx *gin.Context) {
 		return
 	}
 
-	m, total, err := c.db.List{{.ModelNamePluralTitleCase}}(s.TenantID, params.Limit, params.Offset, params.Sort, params.FilterExp, params.FilterArgs)
+	m, total, err := c.service.List{{.ModelNamePluralTitleCase}}(s.TenantID, params.Limit, params.Offset, params.Sort, params.FilterExp, params.FilterArgs)
 	if err != nil {
 		ctx.Error(err).SetType(gin.ErrorTypePrivate)
 		return
@@ -140,7 +140,7 @@ func (c *{{.ModelNameTitleCase}}Controller) Read(ctx *gin.Context) {
 		return
 	}
 
-	m, err := c.db.Read{{.ModelNameTitleCase}}(s.TenantID, id)
+	m, err := c.service.Read(s.TenantID, id)
 	if err != nil {
 		ctx.Error(err).SetType(gin.ErrorTypePrivate)
 		return
@@ -180,7 +180,7 @@ func (c *{{.ModelNameTitleCase}}Controller) Update(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.db.Update{{.ModelNameTitleCase}}(s.TenantID, id, m)
+	res, err := c.service.Update(s.TenantID, id, m)
 	if err != nil {
 		ctx.Error(err).SetType(gin.ErrorTypePrivate)
 		return
@@ -224,7 +224,7 @@ func (c *{{.ModelNameTitleCase}}Controller) Delete(ctx *gin.Context) {
 		q.IDs = append(q.IDs, id)
 	}
 
-	success, err := c.db.Delete{{.ModelNameTitleCase}}(s.TenantID, q.IDs)
+	success, err := c.service.Delete(s.TenantID, q.IDs)
 	if err != nil {
 		ctx.Error(err).SetType(gin.ErrorTypePrivate)
 		return

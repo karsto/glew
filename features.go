@@ -507,7 +507,7 @@ func GenerateControllerFile(destDir, verticalName string, ctx ControllerCtx) (Fi
 	name := strcase.ToSnake(verticalName)
 	fileName := fmt.Sprintf("%v.go", name)
 
-	b, err := ioutil.ReadFile("templates/example-controller.go")
+	b, err := ioutil.ReadFile("templates/controller.go")
 	if err != nil {
 		return FileContainer{}, err
 	}

@@ -2,12 +2,16 @@ package glew
 
 import (
 	"fmt"
-	"io/ioutil"
-	"path"
 	"strings"
 
 	"github.com/iancoleman/strcase"
 )
+
+type SField struct {
+	Name string
+	Type string
+	Tags string
+}
 
 type Backend struct{}
 
@@ -100,7 +104,6 @@ func (_ *Backend) GenerateMapFunc(structName, targetName string, fields []string
 		return "", err
 	}
 	return initFunc, nil
-
 }
 
 // GenerateInit - Generates initializer that sets fields to null explicitly.
@@ -187,6 +190,14 @@ func (_ *Backend) GetNilableFields(fields []GoType) map[string]string {
 		}
 	}
 	return out
+}
+
+type ModelCtx struct {
+	FileName    string
+	Model       string
+	CreateModel string
+	UpdateModel string
+	Utilities   string
 }
 
 func (backend *Backend) NewModelCtx(v VerticalMeta) (ModelCtx, error) {
@@ -316,72 +327,21 @@ func (backend *Backend) NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 	utilities = utilities + createNil + "\n"
 	utilities = utilities + createNew + "\n"
 
+	modelName := strcase.ToSnake(v.Name)
+	fileName := fmt.Sprintf("%v.go", modelName)
+
 	out := ModelCtx{
 		Model:       model,
 		CreateModel: createModel,
 		UpdateModel: updateModel,
 		Utilities:   utilities,
-	}
-	return out, nil
-}
-
-type TestCTX struct {
-	ImportPath               string
-	ModelNameTitleCase       string
-	ModelNamePluralTitleCase string
-	ModelNamePluralCamel     string
-	DefaultFieldStatement    string // TODO: {{.FieldGOName}}: {{.TODOStringOrINToRGODefault}},
-}
-
-func (_ *Backend) NewTestCtx(vertical VerticalMeta) (TestCTX, error) {
-	pName := pluralizer.Plural(vertical.Name)
-	out := TestCTX{
-		ImportPath:               "",
-		ModelNameTitleCase:       vertical.Name,
-		ModelNamePluralTitleCase: pName,
-		ModelNamePluralCamel:     strcase.ToCamel(pName),
-		DefaultFieldStatement:    "//TODO: manually",
-	}
-	return out, nil
-}
-
-// GenerateRESTTestFile - generates a backend api CRUD test file
-func (_ *Backend) GenerateRESTTestFile(destDir, verticalName string, ctx TestCTX) (FileContainer, error) {
-	modelName := strcase.ToSnake(verticalName)
-	testfileDest := path.Join(destDir, NewPaths().Tests)
-	fileName := fmt.Sprintf("%v_test.go", modelName)
-
-	b, err := ioutil.ReadFile("templates/crud-api-tests.go") // TODO: no magic strings
-	if err != nil {
-		return FileContainer{}, err
-	}
-	testTmpl := string(b)
-
-	content, err := ExecuteTemplate("restCrudTest", testTmpl, ctx) // TODO: magic strings
-	if err != nil {
-		return FileContainer{}, err
-	}
-
-	out := FileContainer{
-		Content:     content,
-		Destination: testfileDest,
 		FileName:    fileName,
 	}
 	return out, nil
 }
 
-type ModelCtx struct {
-	Model       string
-	CreateModel string
-	UpdateModel string
-	Utilities   string
-}
-
 // GenerateModel - generates return, create, update model as well as some boiler plate helper functions - mapping between types, trim, inits
-func (_ *Backend) GenerateModel(destDir, verticalName string, ctx ModelCtx) (FileContainer, error) {
-	modelName := strcase.ToSnake(verticalName)
-	modelDest := path.Join(destDir, NewPaths().Model)
-	fileName := fmt.Sprintf("%v.go", modelName)
+func (_ *Backend) GenerateModel(ctx ModelCtx) (FileContainer, error) {
 
 	modelTpl := `package model
 import (
@@ -403,26 +363,67 @@ import (
 	}
 
 	out := FileContainer{
-		Content:     content,
-		Destination: modelDest,
-		FileName:    fileName,
+		Path:     NewPaths().Model,
+		Content:  content,
+		FileName: ctx.FileName,
 	}
 
 	return out, nil
 }
 
+type TestCTX struct {
+	FileName                 string
+	ImportPath               string
+	ModelNameTitleCase       string
+	ModelNamePluralTitleCase string
+	ModelNamePluralCamel     string
+	DefaultFieldStatement    string // TODO: {{.FieldGOName}}: {{.TODOStringOrINToRGODefault}},
+}
+
+func (_ *Backend) NewTestCtx(vertical VerticalMeta) (TestCTX, error) {
+	pName := pluralizer.Plural(vertical.Name)
+	modelName := strcase.ToSnake(vertical.Name)
+	fileName := fmt.Sprintf("%v_test.go", modelName)
+
+	out := TestCTX{
+		FileName:                 fileName,
+		ImportPath:               "",
+		ModelNameTitleCase:       vertical.Name,
+		ModelNamePluralTitleCase: pName,
+		ModelNamePluralCamel:     strcase.ToCamel(pName),
+		DefaultFieldStatement:    "//TODO: manually",
+	}
+	return out, nil
+}
+
+// GenerateRESTTestFile - generates a backend api CRUD test file
+func (_ *Backend) GenerateRESTTestFile(ctx TestCTX) (FileContainer, error) {
+	content, err := ExecuteTemplateFile("templates/crud-api-tests.go", "restCrudTest", ctx) // TODO: magic strings
+	if err != nil {
+		return FileContainer{}, err
+	}
+
+	out := FileContainer{
+		Content:  content,
+		Path:     NewPaths().Tests,
+		FileName: ctx.FileName,
+	}
+	return out, nil
+}
+
 type StoreCtx struct {
+	FileName                 string
 	TODOProjectImportPath    string
 	TableName                string
 	ModelNameTitleCase       string
 	ModelNamePluralTitleCase string
 	CreatePropertiesList     string
 	UpdatePropertiesList     string
-	SQL                      SQLStrings
+	SQL                      SQLContainer
 }
 
 // Generates all the required
-func (_ *Backend) NewStoreCtx(v VerticalMeta, sql SQLStrings, baseCtx BaseAPPCTX) StoreCtx {
+func (_ *Backend) NewStoreCtx(v VerticalMeta, sql SQLContainer, baseCtx BaseAPPCTX) StoreCtx {
 	tableName := strcase.ToSnake(v.Name)
 	modelNameTitleCase := strcase.ToCamel(v.Name)
 
@@ -443,7 +444,11 @@ func (_ *Backend) NewStoreCtx(v VerticalMeta, sql SQLStrings, baseCtx BaseAPPCTX
 	updateProperList = strings.Trim(updateProperList, "\n")
 	modelNamePluralTitleCase := pluralizer.Plural(modelNameTitleCase)
 
+	storeName := strcase.ToSnake(v.Name)
+	fileName := fmt.Sprintf("%v.go", storeName)
+
 	out := StoreCtx{
+		FileName:                 fileName,
 		TODOProjectImportPath:    baseCtx.ImportPath,
 		ModelNameTitleCase:       modelNameTitleCase,
 		ModelNamePluralTitleCase: modelNamePluralTitleCase,
@@ -456,45 +461,22 @@ func (_ *Backend) NewStoreCtx(v VerticalMeta, sql SQLStrings, baseCtx BaseAPPCTX
 }
 
 // GenerateStoreFile - generates a golang ICRUD{{Model}} interface and implementation.
-func (_ *Backend) GenerateStoreFile(destDir, verticalName string, ctx StoreCtx) (FileContainer, error) {
-	storeName := strcase.ToSnake(verticalName)
-	storeDest := path.Join(destDir, NewPaths().Store)
-	fileName := fmt.Sprintf("%v.go", storeName)
-
-	b, err := ioutil.ReadFile("templates/crud-store.go")
-	if err != nil {
-		return FileContainer{}, err
-	}
-	storeTmpl := string(b)
-
-	content, err := ExecuteTemplate("storeFunc", storeTmpl, ctx)
+func (_ *Backend) GenerateStoreFile(ctx StoreCtx) (FileContainer, error) {
+	content, err := ExecuteTemplateFile("templates/crud-store.go", "storeFunc", ctx)
 	if err != nil {
 		return FileContainer{}, err
 	}
 
 	out := FileContainer{
-		Content:     content,
-		Destination: storeDest,
-		FileName:    fileName,
+		Content:  content,
+		Path:     NewPaths().Store,
+		FileName: ctx.FileName,
 	}
 	return out, nil
 }
 
-func (_ *Backend) NewControllerCtx(verticalName string, baseCTX BaseAPPCTX) ControllerCtx {
-	pluralName := pluralizer.Plural(verticalName)
-	out := ControllerCtx{
-		ModelNameTitleCase:       strcase.ToCamel(verticalName),
-		ModelNamePlural:          pluralName,
-		ModelNamePluralTitleCase: strcase.ToCamel(pluralName),
-		ModelNameDocs:            strcase.ToDelimited(verticalName, ' '),
-		ModelIdFieldName:         "id",
-		Route:                    strcase.ToKebab(verticalName),
-		TODOProjectImportPath:    baseCTX.ImportPath,
-	}
-	return out
-}
-
 type ControllerCtx struct {
+	FileName                 string
 	ModelNameTitleCase       string
 	ModelNamePlural          string
 	ModelNamePluralTitleCase string
@@ -504,33 +486,35 @@ type ControllerCtx struct {
 	TODOProjectImportPath    string
 }
 
-// GenerateControllerFile - generates a models gin web controller
-func (_ *Backend) GenerateControllerFile(destDir, verticalName string, ctx ControllerCtx) (FileContainer, error) {
-	constrollerDest := path.Join(destDir, NewPaths().Controllers)
-	name := strcase.ToSnake(verticalName)
+func (_ *Backend) NewControllerCtx(v VerticalMeta, baseCTX BaseAPPCTX) ControllerCtx {
+	pluralName := pluralizer.Plural(v.Name)
+	name := strcase.ToSnake(v.Name)
 	fileName := fmt.Sprintf("%v.go", name)
-
-	b, err := ioutil.ReadFile("templates/controller.go")
-	if err != nil {
-		return FileContainer{}, err
+	out := ControllerCtx{
+		FileName:                 fileName,
+		ModelNameTitleCase:       strcase.ToCamel(v.Name),
+		ModelNamePlural:          pluralName,
+		ModelNamePluralTitleCase: strcase.ToCamel(pluralName),
+		ModelNameDocs:            strcase.ToDelimited(v.Name, ' '),
+		ModelIdFieldName:         "id",
+		Route:                    strcase.ToKebab(v.Name),
+		TODOProjectImportPath:    baseCTX.ImportPath,
 	}
-	controllerTmpl := string(b)
-	content, err := ExecuteTemplate("controller", controllerTmpl, ctx)
+	return out
+}
+
+// GenerateControllerFile - generates a models gin web controller
+func (_ *Backend) GenerateControllerFile(ctx ControllerCtx) (FileContainer, error) {
+	content, err := ExecuteTemplate("templates/controller.go", "controller", ctx)
 	if err != nil {
 		return FileContainer{}, err
 	}
 
 	out := FileContainer{
-		Content:     content,
-		Destination: constrollerDest,
-		FileName:    fileName,
+		Content:  content,
+		Path:     NewPaths().Controllers,
+		FileName: ctx.FileName,
 	}
 
 	return out, nil
-}
-
-type SField struct {
-	Name string
-	Type string
-	Tags string
 }

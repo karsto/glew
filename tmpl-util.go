@@ -3,26 +3,20 @@ package glew
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"reflect"
 	"text/template"
 )
 
-func ExecuteTemplateFile(name, templateName string, ctx interface{}) (string, error) {
-	err := InitIfNotFound(name, templateName)
+func ExecuteTemplateFile(templateFilePath, name string, ctx interface{}) (string, error) {
+	b, err := ioutil.ReadFile(templateFilePath)
 	if err != nil {
 		return "", err
 	}
+	testTmpl := string(b)
 
-	tmpl, ok := templateCache[name]
-	if !ok {
-		return "", fmt.Errorf("template '%s' missing from cache", name)
-	}
+	return ExecuteTemplate(name, testTmpl, ctx)
 
-	var tpl bytes.Buffer
-	if err := tmpl.Execute(&tpl, ctx); err != nil {
-		return "", err
-	}
-	return tpl.String(), nil
 }
 
 var templateCache = map[string]*template.Template{}

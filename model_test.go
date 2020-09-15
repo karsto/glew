@@ -68,7 +68,7 @@ func TestPlayground(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	err = WriteFiles(files)
+	err = WriteFiles(files, destDir)
 	if err != nil {
 		panic(err)
 	}

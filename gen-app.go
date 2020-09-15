@@ -18,12 +18,12 @@ type BaseAPPCTX struct {
 
 // GenerateBaseApp - proccess all the near static templates for the base of the application.
 func (_ *App) GenerateBaseApp(destDir, appName string, ctx BaseAPPCTX) ([]FileContainer, error) {
-	files, err := ReadFiles("static", destDir)
+	files, err := ReadFiles("static")
 	if err != nil {
 		return files, err
 	}
 
-	basics, err := ReadFiles("templates/basic", destDir)
+	basics, err := ReadFiles("templates/basic")
 	if err != nil {
 		return files, err
 	}
@@ -84,7 +84,7 @@ func NewConfig() FeatureConfig {
 // GenerateApp - takes in the required information to generate a basic crud app and based on the feature flags enabled, generates those features.
 func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, verticals []VerticalMeta, baseCtx BaseAPPCTX) ([]FileContainer, error) {
 	// copy base
-	destDir := destRoot //  filepath.Join(destRoot, "base-project")
+	// destDir := destRoot //  filepath.Join(destRoot, "base-project")
 	out := []FileContainer{}
 	if cfg.CopyBase {
 		files, err := app.GenerateBaseApp(destRoot, appName, baseCtx)
@@ -100,7 +100,7 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 	for _, v := range verticals {
 		verticalOut := GeneratedVertical{}
 
-		ctx := app.db.NewSQLCtx(v)
+		ctx := app.db.NewSQLCtx(v, migrationStartId)
 		sql, err := app.db.GenerateSQL(ctx)
 		if err != nil {
 			return out, err
@@ -109,7 +109,7 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 
 		if cfg.Store {
 			ctx := app.backend.NewStoreCtx(v, sql, baseCtx)
-			storeFile, err := app.backend.GenerateStoreFile(destDir, v.Name, ctx)
+			storeFile, err := app.backend.GenerateStoreFile(ctx)
 			if err != nil {
 				return out, err
 			}
@@ -117,7 +117,7 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 		}
 
 		if cfg.Migrations {
-			migrations, err := app.db.GenerateMigrationFiles(destDir, v.Name, sql, migrationStartId)
+			migrations, err := app.db.GenerateMigrationFiles(sql)
 			if err != nil {
 				return out, err
 			}
@@ -126,8 +126,8 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 		}
 
 		if cfg.Controllers {
-			ctx := app.backend.NewControllerCtx(v.Name, baseCtx)
-			controllerFile, err := app.backend.GenerateControllerFile(destDir, v.Name, ctx)
+			ctx := app.backend.NewControllerCtx(v, baseCtx)
+			controllerFile, err := app.backend.GenerateControllerFile(ctx)
 			if err != nil {
 				return out, err
 			}
@@ -138,7 +138,7 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 			if err != nil {
 				return out, err
 			}
-			model, err := app.backend.GenerateModel(destDir, v.Name, ctx)
+			model, err := app.backend.GenerateModel(ctx)
 			if err != nil {
 				return out, err
 			}
@@ -150,7 +150,7 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 			if err != nil {
 				return out, err
 			}
-			crudTestFile, err := app.backend.GenerateRESTTestFile(destDir, v.Name, ctx)
+			crudTestFile, err := app.backend.GenerateRESTTestFile(ctx)
 			if err != nil {
 				return out, err
 			}
@@ -162,7 +162,7 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 			if err != nil {
 				return out, err
 			}
-			jsStoreFile, err := app.frontend.GenerateStoreVueFile(destDir, v.Name, ctx)
+			jsStoreFile, err := app.frontend.GenerateStoreVueFile(ctx)
 			if err != nil {
 				return out, err
 			}
@@ -174,7 +174,7 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 			if err != nil {
 				return out, err
 			}
-			listFile, err := app.frontend.GenerateListVueFile(destDir, v.Name, ctx)
+			listFile, err := app.frontend.GenerateListVueFile(ctx)
 			if err != nil {
 				return out, err
 			}
@@ -186,7 +186,7 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 			if err != nil {
 				return out, err
 			}
-			newVueFile, err := app.frontend.GenerateNewVueFile(destDir, v.Name, ctx)
+			newVueFile, err := app.frontend.GenerateNewVueFile(ctx)
 			if err != nil {
 				return out, err
 			}
@@ -212,7 +212,7 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 		if err != nil {
 			return out, err
 		}
-		jsRouter, err := app.frontend.GenerateJSRouterFile(destDir, ctx)
+		jsRouter, err := app.frontend.GenerateJSRouterFile(ctx)
 		if err != nil {
 			return out, err
 		}
@@ -232,7 +232,7 @@ type VerticalMeta struct {
 
 // GeneratedVertical - the resulting vertical feature set. Contains Raw strings and objects generated in case they are to be used elsewhere as well as file containers aka digital abstractions of files.
 type GeneratedVertical struct {
-	SQL        SQLStrings
+	SQL        SQLContainer
 	Controller FileContainer
 	Store      FileContainer
 	Model      FileContainer

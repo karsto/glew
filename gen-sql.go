@@ -2,13 +2,14 @@ package glew
 
 import (
 	"fmt"
-	"path"
 	"reflect"
 	"strings"
 
 	"github.com/iancoleman/strcase"
 )
 
+type DB struct {
+}
 type DBTypeCtx struct {
 	Name       string
 	Type       string
@@ -17,12 +18,33 @@ type DBTypeCtx struct {
 	IsNullable bool
 }
 
-type DB struct {
+type SQLCtx struct {
+	UpFileName       string
+	DownFileName     string
+	CreateStatements []string
+	TableName        string
+	InsertFields     []string
+	PutFields        []string
+	DBFields         []string
+	IDColName        string
+}
+
+type SQLContainer struct {
+	SQLCtx
+	Insert      string
+	Read        string
+	List        string
+	Put         string
+	Delete      string
+	CreateTable string
+	DropTable   string
 }
 
 // GenerateSQL - generates starter insert, read, list, update, delete, table create, table down sql statements.
-func (_ *DB) GenerateSQL(ctx SQLCtx) (SQLStrings, error) {
-	out := SQLStrings{}
+func (_ *DB) GenerateSQL(ctx SQLCtx) (SQLContainer, error) {
+	out := SQLContainer{
+		SQLCtx: ctx,
+	}
 
 	listF := func(idx int, cur, res string) string {
 		return fmt.Sprintf("\t\t\t%v,\n", cur)
@@ -243,7 +265,7 @@ func (db *DB) NewDBTypeCtx(t GoType) DBTypeCtx {
 }
 
 // NewSQLCtx - takes in the metadata for a given vertical and creates all related sql fields.
-func (db *DB) NewSQLCtx(vertical VerticalMeta) SQLCtx {
+func (db *DB) NewSQLCtx(vertical VerticalMeta, dbScriptIdxStart int) SQLCtx {
 	dbFields := []string{}
 	createStatements := []string{}
 	idColName := ".TODOidColName"
@@ -270,7 +292,12 @@ func (db *DB) NewSQLCtx(vertical VerticalMeta) SQLCtx {
 	}
 
 	tableName := strcase.ToSnake(vertical.Name)
+	upFileName := fmt.Sprintf("%v_%s.up.sql", dbScriptIdxStart, vertical.Name)
+	downFileName := fmt.Sprintf("%v_%s.drop.sql", dbScriptIdxStart, vertical.Name)
+
 	out := SQLCtx{
+		UpFileName:       upFileName,
+		DownFileName:     downFileName,
 		CreateStatements: createStatements,
 		TableName:        tableName,
 		DBFields:         dbFields,
@@ -281,33 +308,20 @@ func (db *DB) NewSQLCtx(vertical VerticalMeta) SQLCtx {
 	return out
 }
 
-type SQLCtx struct {
-	CreateStatements []string
-	TableName        string
-	InsertFields     []string
-	PutFields        []string
-	DBFields         []string
-	IDColName        string
-}
-
 // GenerateMigrationFiles - generates sql db up and down scripts for a given model.
-func (_ *DB) GenerateMigrationFiles(destDir, verticalName string, sql SQLStrings, dbScriptIdxStart int) ([]FileContainer, error) {
-	migrationsDest := path.Join(destDir, NewPaths().Core)
-	verticalName = strcase.ToSnake(verticalName)
+func (_ *DB) GenerateMigrationFiles(sql SQLContainer) ([]FileContainer, error) {
 
 	out := []FileContainer{}
-	fileName := fmt.Sprintf("%v_%s.up.sql", dbScriptIdxStart, verticalName)
 	out = append(out, FileContainer{
-		Content:     sql.CreateTable,
-		Destination: migrationsDest,
-		FileName:    fileName,
+		Content:  sql.CreateTable,
+		Path:     NewPaths().Core,
+		FileName: sql.UpFileName,
 	})
 
-	fileName = fmt.Sprintf("%v_%s.drop.sql", dbScriptIdxStart, verticalName)
 	out = append(out, FileContainer{
-		Content:     sql.DropTable,
-		Destination: migrationsDest,
-		FileName:    fileName,
+		Content:  sql.DropTable,
+		Path:     NewPaths().Core,
+		FileName: sql.DownFileName,
 	})
 
 	return out, nil

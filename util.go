@@ -3,6 +3,7 @@ package glew
 import (
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -51,18 +52,6 @@ func (t *GoType) IsNumeric() bool {
 func (t *GoType) IsString() bool {
 	return t.Type.String() == "string"
 }
-
-type SQLStrings struct {
-	Insert      string
-	Read        string
-	List        string
-	Put         string
-	Delete      string
-	CreateTable string
-	DropTable   string
-}
-
-/// ***** Input
 
 // ModelMeta - simple struct with name and field information required to describe a model
 type ModelMeta struct {
@@ -126,12 +115,12 @@ func NewPaths() Paths {
 }
 
 type FileContainer struct {
-	Destination string
-	FileName    string
-	Content     string
+	Path     string
+	FileName string
+	Content  string
 }
 
-func ReadFiles(source, destDir string) ([]FileContainer, error) {
+func ReadFiles(source string) ([]FileContainer, error) {
 	out := []FileContainer{}
 	err := filepath.Walk(source,
 		// path includes filename
@@ -151,11 +140,10 @@ func ReadFiles(source, destDir string) ([]FileContainer, error) {
 				return err
 			}
 			parentPath = strings.TrimPrefix(parentPath, source)
-			destination := filepath.Join(destDir, parentPath)
 			f := FileContainer{
-				Destination: destination,
-				FileName:    name,
-				Content:     string(data),
+				Path:     parentPath,
+				FileName: name,
+				Content:  string(data),
 			}
 			out = append(out, f)
 			return nil
@@ -166,9 +154,10 @@ func ReadFiles(source, destDir string) ([]FileContainer, error) {
 	return out, nil
 }
 
-func WriteFiles(fContainers []FileContainer) error {
+func WriteFiles(fContainers []FileContainer, dest string) error {
 	for _, f := range fContainers {
-		err := files.WriteFile("./"+f.Destination, f.FileName, f.Content)
+		path := path.Join("./", dest, f.Path)
+		err := files.WriteFile(path, f.FileName, f.Content)
 		if err != nil {
 			return err
 		}

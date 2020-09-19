@@ -20,27 +20,33 @@ The basic functionality out of the box:
 * Includes 'internal' utilities useful for developing apps.
 * Includes `drone.yml` initial build template.
 * Includes `docker-compose.yml` starter for local dev.
-* Includes `Dockerfile` starter for local dev.
-* Includes `.gitignore` and basic `Makefile`.
+* Includes alpine `nobody:nouser`, CA and TZ info, `Dockerfile` starter for local dev.
+* Includes `.gitignore` and basic `Makefile` for easy testing.
 * All code supports a tenant id and enforces this very explicitly.
 * All apps configured through env variables.
 
 For each model set provided a "feature" will be created. Each Feature has the following functionality:
 
 * A CRUD controller
+  * Create, Read, List, Put, Patch, Delete
   * All endpoints bind user input to data models.
   * All endpoints validate user input.
   * All endpoints have swagger documentation boiler plate text.
   * List endpoint supports paging and dynamic query filtering.
-  * Delete endpoint supports multi delete.
-* CRUD typed data store functions.
-* Basic db migration up/down of table.
+  * Delete and Patch endpoints supports multi model operations in a single transaction.
+* Typed data store and interfaces.
+* Basic db migration up/down of tables.
 * Basic CRUD SQL statements.
 * Utilities
   * Model initializer.
   * Model string trimmer.
   * Inter model mapping.
-* All code is tenant aware.
+* All code is tenant aware via simple tenantId.
+
+## Why
+
+* wanted to streamline creating applications with a batteries included approach (one in which I get to select the batteries), with batteries lighter ie more directly hackable/modifiable than something like [goa](https://github.com/goadesign/goa) or [buffalo](https://gobuffalo.io/en/).
+* reason to learn/experiment with `go/ast`, `go/parser`, `go/token`
 
 ## Library Choices
 
@@ -70,8 +76,8 @@ These are the primary dependencies and what they are responsible for:
 
 ## Limitations
 
-* Doesn't handle complex types - it just handles the basic stuff and will begin to break currently when you go outside of that.
-* Doesn't handle relationships - its just a "code printer". It knows basic things about fields and basic types (See #1) because thats easy. Exception: features should be loaded into the app generator with dependencies ordered first. This is simply because the database create scripts will need to be reordered otherwise.
+* No complex types - it *currently* just handles the basic stuff (go std types) and will begin to break when you go outside of that.
+* Doesn't handle relationships - its just a "code printer". It knows basic things about fields and basic types (See #1) because thats easy. In a way it supports one to many parent -> child type relations by having a struct field that references another resource. Features should be loaded into the app generator with dependencies ordered first. This is simply because the database create scripts will need to be reordered otherwise. It doesn't do anything for many to many relationships and this is not planned.
 
 ## Repo Structure
 

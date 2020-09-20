@@ -1,4 +1,4 @@
-package glew
+package pkg
 
 import (
 	"io/ioutil"
@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/karsto/glew/common/files"
+	"github.com/karsto/common/files"
 )
 
 type GoType struct {

@@ -1,4 +1,4 @@
-package glew
+package main
 
 import "time"
 

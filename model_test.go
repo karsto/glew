@@ -1,4 +1,4 @@
-package glew
+package main
 
 import (
 	"fmt"
@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/karsto/glew/pkg"
 )
 
 func assertEqual(t *testing.T, a interface{}, b interface{}) {
@@ -45,14 +47,14 @@ func TestPlayground(t *testing.T) {
 		appName - the name of the application and docker runtime
 		importPath - application go import directory, aka the directory of the app to reference itself
 	*/
-	app := App{
+	app := pkg.App{
 		db:       DB{},
 		frontend: Frontend{},
 		backend:  Backend{},
 	}
 	destDir := "out"
 	appName := "testApp"
-	importPath := "github.com/ashtonian/glew/out"
+	importPath := "github.com/karsto/glew/out"
 
 	verticals := []VerticalMeta{}
 

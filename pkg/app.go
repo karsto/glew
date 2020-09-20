@@ -1,4 +1,4 @@
-package glew
+package pkg
 
 import (
 	"fmt"

@@ -13,6 +13,14 @@ import (
 
 // TODO: simplify names if Create/Update/Result are the same model.
 
+func NewApp(frontend Frontend, backend Backend, db DB) *App {
+	return &App{
+		db:       db,
+		frontend: frontend,
+		backend:  backend,
+	}
+}
+
 type App struct {
 	db       DB
 	frontend Frontend

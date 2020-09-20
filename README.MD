@@ -172,3 +172,10 @@ func main() {
 		panic(err)
 	}
 ```
+
+### Model Definitions
+
+TODO:
+
+* struct tags
+* options

@@ -185,6 +185,42 @@ func (_ *DB) GenerateCreateStatement(t DBTypeCtx) string {
 }
 
 // GetSQLType - maps golang data type to corresponding postgres sql data type to be used in a create statement.
+func (_ *DB) GetSQLType2(t string) string {
+	out := "TODO"
+	switch t {
+	case "Int8", "Uint8", "Int16":
+		out = "smallint"
+	case "Uint16", "Int32":
+		out = "integer"
+	case "Uint32", "Int64", "Int":
+		out = "bigint"
+	case "Uint", "Uint64":
+		out = "bigint"
+	case "Float32":
+		out = "real"
+	case "Float64":
+		out = "precision"
+	case "Bool":
+		out = "boolean"
+	case "String":
+		out = "text"
+		// TODO:
+	// case "reflect". []byte:
+	// 	out = "bytea"
+	case "Struct", "Array", "Map":
+		out = "jsonb"
+		// TODO:
+		// case time.Time:
+		// 	out = "timestamptz"
+		// case net.IP:
+		// 	out = "inet"
+		// case net.IPNet:
+		// 	out = ""
+	}
+	return out
+}
+
+// GetSQLType - maps golang data type to corresponding postgres sql data type to be used in a create statement.
 func (_ *DB) GetSQLType(t reflect.Type) string {
 	out := "TODO"
 	switch t.Kind() {

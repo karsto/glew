@@ -2,9 +2,15 @@ package glew
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"strings"
 
 	"github.com/gertd/go-pluralize"
 )
+
+// TODO: simplify names if Create/Update/Result are the same model.
 
 type App struct {
 	db       DB
@@ -14,6 +20,109 @@ type App struct {
 
 type BaseAPPCTX struct {
 	ImportPath string
+}
+
+func (_ *App) GetVerticalsFromFile(filePath string) ([]VerticalMeta, error) {
+
+	fset := token.NewFileSet()
+	target, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
+	if err != nil {
+		return []VerticalMeta{}, err
+	}
+
+	structMap := map[string]VerticalMeta{}
+	// get all structs, match / create updates
+
+	ast.Inspect(target, func(n ast.Node) bool {
+		// TODO: extract meta info and convert to ModelMeta
+		// TODO: consider using ast field types ?
+		structBlock, ok := n.(*ast.StructType)
+		spec, ok2 := n.(*ast.TypeSpec)
+
+		if ok && ok2 {
+			name := spec.Name.Name
+			if strings.Contains(name, "Create") {
+				name = strings.Replace(name, "Create", "", -1)
+				meta, found := structMap[name]
+				if !found {
+					// make new
+				} else {
+					fields := []GoType{}
+					for _, field := range structBlock.Fields.List {
+						fieldSpec := GoType{
+							Name: field.Names[0].Name,
+							// Tags: field.Tag.Value,
+							// Type:  field.Tag.Value,
+						}
+						fields = append(fields, fieldSpec)
+					}
+
+					meta.UpdateModel = &ModelMeta{
+						Name:   spec.Name.Name,
+						Fields: fields,
+					}
+				}
+				// TODO: put back in map
+
+			} else if strings.Contains(name, "Update") {
+				name = strings.Replace(name, "Update", "", -1)
+			} else {
+
+			}
+
+		}
+		return true
+	})
+
+	result := make([]VerticalMeta, 0, len(structMap))
+	for _, v := range structMap {
+		if v.CreateModel == nil {
+			v.CreateModel = v.Model
+		}
+		if v.UpdateModel == nil {
+			v.UpdateModel = v.CreateModel
+		}
+		result = append(result, v)
+	}
+
+	return result, nil
+}
+
+// GenerateVerticalMeta - takes in model, name, and create/update reference models and then using reflection generates the meta for each struct.
+// model must be populated. name can be empty, createM, putM can be nil.
+func (_ *App) GenerateVerticalMeta(model interface{}, name string, createM, putM interface{}) (VerticalMeta, error) {
+	if createM == nil {
+		createM = model
+	}
+	if putM == nil && createM != nil {
+		putM = createM
+	}
+	if putM == nil {
+		putM = createM
+	}
+	modelMeta, err := GetMeta(model)
+	if err != nil {
+		return VerticalMeta{}, err
+	}
+	if len(name) < 1 {
+		name = modelMeta.Name
+	}
+
+	createMeta, err := GetMeta(createM)
+	if err != nil {
+		return VerticalMeta{}, err
+	}
+	updateMeta, err := GetMeta(putM)
+	if err != nil {
+		return VerticalMeta{}, err
+	}
+	out := VerticalMeta{
+		Name:        name,
+		Model:       &modelMeta,
+		CreateModel: &createMeta,
+		UpdateModel: &updateMeta,
+	}
+	return out, nil
 }
 
 // GenerateBaseApp - proccess all the near static templates for the base of the application.
@@ -225,9 +334,9 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 // Vertical Meta - all the meta information needed to create a vertical.
 type VerticalMeta struct {
 	Name        string //TODO: what is name vs model.name
-	Model       ModelMeta
-	CreateModel ModelMeta
-	UpdateModel ModelMeta
+	Model       *ModelMeta
+	CreateModel *ModelMeta
+	UpdateModel *ModelMeta
 }
 
 // GeneratedVertical - the resulting vertical feature set. Contains Raw strings and objects generated in case they are to be used elsewhere as well as file containers aka digital abstractions of files.
@@ -242,41 +351,4 @@ type GeneratedVertical struct {
 	VueNewModel  FileContainer
 	VueListModel FileContainer
 	APICRUDTests FileContainer
-}
-
-// GenerateVerticalMeta - takes in model, name, and create/update reference models and then using reflection generates the meta for each struct.
-// model must be populated. name can be empty, createM, putM can be nil.
-func (_ *App) GenerateVerticalMeta(model interface{}, name string, createM, putM interface{}) (VerticalMeta, error) {
-	if createM == nil {
-		createM = model
-	}
-	if putM == nil && createM != nil {
-		putM = createM
-	}
-	if putM == nil {
-		putM = model
-	}
-	modelMeta, err := GetMeta(model)
-	if err != nil {
-		return VerticalMeta{}, err
-	}
-	if len(name) < 1 {
-		name = modelMeta.Name
-	}
-
-	createMeta, err := GetMeta(createM)
-	if err != nil {
-		return VerticalMeta{}, err
-	}
-	updateMeta, err := GetMeta(putM)
-	if err != nil {
-		return VerticalMeta{}, err
-	}
-	out := VerticalMeta{
-		Name:        name,
-		Model:       modelMeta,
-		CreateModel: createMeta,
-		UpdateModel: updateMeta,
-	}
-	return out, nil
 }

@@ -81,12 +81,14 @@ These are the primary dependencies and what they are responsible for:
 
 ## Repo Structure
 
-* `./common` - simple std library of extensions, minor utilities, syntax sugars, smarter defaults, and other commonly used snippets for output project and others to use. TODO: Consider moving to its own repo and naming better.
-* `./static` - base copy paste static templates. This is the dumb starter project static contents.
-* `./templates` - this is the base templates for various code features. This is the core bootstrapper code thats being replaced.
-* `./` - this is the application that takes structs and generates different features and outputs a simple crud bootstrapped app. TODO: cli
+* `./cmd` - the cmd package contains the wire up code for the cli.
+* `./pkg/static` - base copy paste static templates. This is the dumb starter project static contents.
+* `./pkg/templates` - this is the base templates for various code features. This is the core bootstrapper code thats being replaced.
+* `./pkg` - this is where glews core library is.
 
-## CLI Output Structure
+## Output Application Structure
+
+The product of this application is a cli project folder with the following layout:
 
 * `./` - all the dev tool ([drone](https://drone.io/), [go modules](https://blog.golang.org/using-go-modules), configs and main.go
 * `./cmd` - the cli commands.
@@ -101,7 +103,20 @@ These are the primary dependencies and what they are responsible for:
 
 ## Getting Started
 
-Run the following application and then look at the output folder. You will find a new ready to run app, see `README.MD` for next steps.
+You can run glew in two ways, in code or as a cli.
+
+### Cli
+
+```sh
+touch models.go
+
+git clone https://github.com/kartso/glew.git
+go install
+glew
+
+```
+
+### In code
 
 ```golang
 type TestModel struct {
@@ -127,31 +142,33 @@ type UpdateTestModel struct {
 }
 
 func main() {
-    // TODO: set your destination directory
-	destDir := "out"
-	verticals := []VerticalMeta{}
-    appName:= "testApp"
+	/*
+		CONFIG
+		destDir - the output directory from this run
+		appName - the name of the application and docker runtime
+		importPath - application go import directory, aka the directory of the app to reference itself
+	*/
+	app := pkg.NewApp(pkg.Frontend{}, pkg.Backend{}, pkg.DB{})
 
-	vertical, err := GenerateVertical(TestModel{}, "TestVertical", CreateTestModel{}, UpdateTestModel{})
-	if err != nil {
-		spew.Dump(err)
-		panic(err)
-	}
+	destDir := "out"
+	appName := "testApp"
+	importPath := "github.com/karsto/glew/out"
+
+	verticals := []pkg.VerticalMeta{}
+
+	vertical, _ := app.GenerateVerticalMeta(TestModel{}, "TestVertical", CreateTestModel{}, UpdateTestModel{})
 
 	verticals = append(verticals, vertical)
-	ctx := BaseAPPCTX{
-		ImportPath: "{{.TODOYourImportPath}}", // TODO: set your import path for the project to be generated ie github.com/karsto/test
-	}
-	files, err := GenerateApp(destDir, appName, verticals, ctx)
-	if err != nil {
-		spew.Dump(err)
-		panic(err)
-	}
-	err = WriteFiles(files)
-	if err != nil {
-		spew.Dump(err)
-		panic(err)
-    }
 
-    // TODO: ./out now has starter application with controllers and dal for given features. See README.md for next steps.
+	ctx := pkg.BaseAPPCTX{
+		ImportPath: importPath,
+	}
+
+	features := pkg.NewConfig()
+	files, _ := app.GenerateApp(features, destDir, appName, verticals, ctx)
+
+	err = pkg.WriteFiles(files, destDir)
+	if err != nil {
+		panic(err)
+	}
 ```

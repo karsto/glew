@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"reflect"
 	"strings"
 
 	"github.com/gertd/go-pluralize"
@@ -51,8 +52,8 @@ func (_ *App) GetVerticalsFromFile(filePath string) ([]VerticalMeta, error) {
 					for _, field := range structBlock.Fields.List {
 						fieldSpec := GoType{
 							Name: field.Names[0].Name,
-							// Tags: field.Tag.Value,
-							// Type:  field.Tag.Value,
+							Tags: reflect.StructTag(field.Tag.Value),
+							Type: field.Tag.Value,
 						}
 						fields = append(fields, fieldSpec)
 					}

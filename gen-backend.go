@@ -2,6 +2,7 @@ package glew
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -10,7 +11,7 @@ import (
 type SField struct {
 	Name string
 	Type string
-	Tags string
+	Tags reflect.StructTag
 }
 
 type Backend struct{}
@@ -205,8 +206,8 @@ func (backend *Backend) NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 	for _, v := range v.Model.Fields {
 		fields = append(fields, SField{
 			Name: v.Name,
-			Type: v.Type.String(),
-			Tags: string(v.Tags),
+			Type: v.Type,
+			Tags: v.Tags,
 		})
 	}
 	mName := v.Name
@@ -219,8 +220,8 @@ func (backend *Backend) NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 	for _, v := range v.UpdateModel.Fields {
 		updateFields = append(updateFields, SField{
 			Name: v.Name,
-			Type: v.Type.String(),
-			Tags: string(v.Tags),
+			Type: v.Type,
+			Tags: v.Tags,
 		})
 	}
 	updateName := fmt.Sprintf("Update%v", v.Name)
@@ -232,8 +233,8 @@ func (backend *Backend) NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 	for _, v := range v.CreateModel.Fields {
 		createFields = append(createFields, SField{
 			Name: v.Name,
-			Type: v.Type.String(),
-			Tags: string(v.Tags),
+			Type: v.Type,
+			Tags: v.Tags,
 		})
 	}
 	createName := fmt.Sprintf("Create%v", v.Name)

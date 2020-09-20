@@ -188,26 +188,26 @@ func (_ *DB) GenerateCreateStatement(t DBTypeCtx) string {
 func (_ *DB) GetSQLType2(t string) string {
 	out := "TODO"
 	switch t {
-	case "Int8", "Uint8", "Int16":
+	case "int8", "uint8", "int16":
 		out = "smallint"
-	case "Uint16", "Int32":
+	case "uint16", "int32":
 		out = "integer"
-	case "Uint32", "Int64", "Int":
+	case "uint32", "int64", "int":
 		out = "bigint"
-	case "Uint", "Uint64":
+	case "uint", "uint64":
 		out = "bigint"
-	case "Float32":
+	case "float32":
 		out = "real"
-	case "Float64":
+	case "float64":
 		out = "precision"
-	case "Bool":
+	case "bool":
 		out = "boolean"
-	case "String":
+	case "string":
 		out = "text"
 		// TODO:
 	// case "reflect". []byte:
 	// 	out = "bytea"
-	case "Struct", "Array", "Map":
+	case "struct", "array", "map":
 		out = "jsonb"
 		// TODO:
 		// case time.Time:
@@ -270,7 +270,7 @@ func (db *DB) NewDBTypeCtx(t GoType) DBTypeCtx {
 		// TODO: nesting tags
 		name = v
 	}
-	oType := db.GetSQLType(t.Type)
+	oType := db.GetSQLType2(t.Type)
 	if v, found := t.Tags.Lookup("db2:type"); found {
 		// TODO: nesting tags
 		oType = v

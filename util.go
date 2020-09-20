@@ -13,22 +13,22 @@ import (
 
 type GoType struct {
 	Name string
-	Type reflect.Type
+	Type string
 	Tags reflect.StructTag
 }
 
 func (t *GoType) GetKey() string {
-	out := t.Name + " " + t.Type.Name() + " " + string(t.Tags)
+	out := t.Name + " " + t.Type + " " + string(t.Tags)
 	return out
 }
 
 func (t *GoType) GetNewStatement() string {
-	out := t.Type.Name() + "{}"
+	out := t.Type + "{}"
 	return out
 }
 
 func (t *GoType) IsNillable() bool {
-	switch t.Type.String() {
+	switch t.Type {
 
 	case "int", "string", "bool", "Time", "time.Time":
 		// TODO: better way to do this
@@ -39,7 +39,7 @@ func (t *GoType) IsNillable() bool {
 }
 
 func (t *GoType) IsNumeric() bool {
-	switch t.Type.String() {
+	switch t.Type {
 
 	case "int", "int8", "int16", "int32",
 		"int64", "uint", "uint8", "uint16", "uint32",
@@ -50,7 +50,7 @@ func (t *GoType) IsNumeric() bool {
 }
 
 func (t *GoType) IsString() bool {
-	return t.Type.String() == "string"
+	return t.Type == "string"
 }
 
 // ModelMeta - simple struct with name and field information required to describe a model
@@ -73,7 +73,7 @@ func GetMeta(m interface{}) (ModelMeta, error) {
 	for _, f := range fields {
 		out = append(out, GoType{
 			Name: f.Name,
-			Type: f.Type,
+			Type: f.Type.String(),
 			Tags: f.Tag,
 		})
 	}

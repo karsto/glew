@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/a8m/rql v1.2.0
+	github.com/davecgh/go-spew v1.1.1
 	github.com/gertd/go-pluralize v0.1.7
 	github.com/gin-gonic/gin v1.6.3
 	github.com/iancoleman/strcase v0.1.1

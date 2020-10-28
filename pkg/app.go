@@ -136,12 +136,12 @@ func (_ *App) GenerateVerticalMeta(model interface{}, name string, createM, putM
 
 // GenerateBaseApp - proccess all the near static templates for the base of the application.
 func (_ *App) GenerateBaseApp(destDir, appName string, ctx BaseAPPCTX) ([]FileContainer, error) {
-	files, err := ReadFiles("static")
+	files, err := ReadFiles(NewPaths().Static)
 	if err != nil {
 		return files, err
 	}
 
-	basics, err := ReadFiles("templates/basic")
+	basics, err := ReadFiles(NewPaths().BasicTemplates)
 	if err != nil {
 		return files, err
 	}

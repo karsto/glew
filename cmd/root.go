@@ -21,11 +21,11 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		app := pkg.NewApp(pkg.Frontend{}, pkg.Backend{}, pkg.DB{})
 
-		destDir := "out"
+		destDir := "../out"
 		appName := "testApp"
 		importPath := "github.com/karsto/glew/out"
 
-		verticals, err := app.GetVerticalsFromFile("TODO File")
+		verticals, err := app.GetVerticalsFromFile("test-target.go")
 		if err != nil {
 			panic(err)
 		}

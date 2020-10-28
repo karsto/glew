@@ -3,26 +3,17 @@ package store
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
-	"github.com/jackc/pgx"
-
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
-	"github.com/karsto/glew/common/sqlutil"
-
+	"github.com/karsto/common/sqlutil"
 	// DB DRIVER
-	"github.com/jackc/pgx/stdlib"
-	_ "github.com/jackc/pgx/stdlib"
 )
 
-func InitDB(config pgx.ConnConfig, maxConnections int, timeout time.Duration) (*sqlx.DB, error) {
-	driverConfig := stdlib.DriverConfig{
-		ConnConfig:   config,
-		AfterConnect: nil,
-	}
-	stdlib.RegisterDriverConfig(&driverConfig)
-	db, err := sql.Open("pgx", driverConfig.ConnectionString(""))
+func InitDB(driverName, connStr string, maxConnections int, timeout time.Duration) (*sqlx.DB, error) {
+	db, err := sql.Open(driverName, connStr)
 	if err != nil {
 		return nil, err
 	}
@@ -32,22 +23,28 @@ func InitDB(config pgx.ConnConfig, maxConnections int, timeout time.Duration) (*
 	}
 	db.SetMaxIdleConns(maxConnections)
 	db.SetMaxOpenConns(maxConnections)
-	return sqlx.NewDb(db, "pgx"), nil
+	return sqlx.NewDb(db, driverName), nil
 }
 
 type Store struct {
 	db *sqlx.DB
 }
 
-func NewStore(config pgx.ConnConfig) *Store {
-	db, err := InitDB(config, 50, 30*time.Second)
+func NewPGXtore(connString string) (*Store, error) {
+	config, err := pgx.ParseConfig(connString)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
+	}
+	parsedConnStr := stdlib.RegisterConnConfig(config)
+
+	db, err := InitDB("pgx", parsedConnStr, 50, 30*time.Second)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Store{
 		db: db,
-	}
+	}, nil
 }
 
 func (store *Store) deleteModel(sql string, tenantID int, IDs []int) (bool, int, error) {

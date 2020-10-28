@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx"
 	"github.com/jmoiron/sqlx"
-	"github.com/karsto/glew/common/sqlutil"
+	"github.com/karsto/common/sqlutil"
 	store "github.com/karsto/glew/templates"
 	//"{{.TODOProjectImportPath}}/pkg/api/model"
 )

@@ -347,7 +347,7 @@ func (_ *Backend) GenerateModel(ctx ModelCtx) (FileContainer, error) {
 	modelTpl := `package model
 import (
 	"time"
-	"github.com/karsto/glew/common/types"
+	"github.com/karsto/common/types"
 )
 
 {{.Model}}

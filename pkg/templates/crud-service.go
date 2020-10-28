@@ -3,7 +3,7 @@ package service
 import (
 "strings"
 
-"github.com/karsto/glew/common/sqlutil"
+"github.com/karsto/common/sqlutil"
 "{{.TODOProjectImportPath}}/pkg/api/model"
 )
 

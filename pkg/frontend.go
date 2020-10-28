@@ -296,7 +296,7 @@ func (_ *Frontend) NewJSRouterCTX(verticals []VerticalMeta) (JSRouterCTX, error)
 
 // GenerateJSRouterFile - generates a vue router that supports crud operations
 func (_ *Frontend) GenerateJSRouterFile(ctx JSRouterCTX) (FileContainer, error) {
-	b, err := ioutil.ReadFile("templates/ui/router-template.js") // TODO: no magic strings
+	b, err := ioutil.ReadFile(NewPaths().UIRouter)
 	if err != nil {
 		return FileContainer{}, err
 	}

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	extgin "github.com/karsto/glew/common/ext-gin"
-	"github.com/karsto/glew/common/validation"
+	extgin "github.com/karsto/common/ext-gin"
+	"github.com/karsto/common/validation"
 	"{{.TODOProjectImportPath}}/pkg/api/config"
 	"{{.TODOProjectImportPath}}/pkg/api/controllers"
 	"{{.TODOProjectImportPath}}/pkg/api/store"

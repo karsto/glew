@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gertd/go-pluralize"
 )
 
@@ -45,54 +44,18 @@ func (_ *App) GetVerticalsFromFile(filePath string) ([]VerticalMeta, error) {
 
 	ast.Inspect(target, func(n ast.Node) bool {
 		// TODO: extract meta info and convert to ModelMeta
-		// TODO: consider using ast field types ?
-
-		// TODO: find typespec, then assert typespect.type.(*ast.structtype) and extract relevant info
 		// TODO: put ast info in map based on poskey
 		// TODO: put comments or check for comments in startPos -1 for meta
 		// TODO: figure out how to passthrough everything else and add ignore comments
-		/*
-					(*ast.TypeSpec)(0xc00019a4e0)({
-			 Doc: (*ast.CommentGroup)(<nil>),
-			 Name: (*ast.Ident)(0xc00000f920)(TestModel2),
-			 Assign: (token.Pos) 0,
-			 Type: (*ast.StructType)(0xc00000fba0)({
-			  Struct: (token.Pos) 71,
-			  Fields: (*ast.FieldList)
-		*/
-		structBlock, ok := n.(*ast.StructType)
-		spec, ok2 := n.(*ast.TypeSpec)
 
-		if ok {
-			spew.Dump("structblock", structBlock)
-			fmt.Printf("Fields: %v\n", structBlock.Fields)
-			fmt.Printf("Struct: %v\n", structBlock.Struct)
-
+		spec, ok := n.(*ast.TypeSpec)
+		if !ok {
+			return true
 		}
-
-		if ok2 {
-			spew.Dump("spec", spec)
-			fmt.Printf("Comment: %v\n", spec.Comment)
-			fmt.Printf("Doc: %v\n", spec.Doc)
-			fmt.Printf("Name: %v\n", spec.Name)
-			fmt.Printf("Type: %v\n", spec.Type)
+		structBlock, ok2 := spec.Type.(*ast.StructType)
+		if !ok2 {
+			return true
 		}
-		// ast.GenDecl
-		// ast.ImportSpec
-		// ast.BasicLit
-		// ast.GenDecl
-
-		// ast.Comment
-		// ast.CommentGroup
-		// ast.Node
-
-		// ast.TypeSpec valid
-		// ast.FieldList
-
-		// // hard coding looking these up
-		// typeDecl := f.Decls[0].(*ast.GenDecl)
-		// structDecl := typeDecl.Specs[0].(*ast.TypeSpec).Type.(*ast.StructType)
-		// fields := structDecl.Fields.List
 
 		if ok && ok2 {
 			name := spec.Name.Name

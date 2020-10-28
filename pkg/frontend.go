@@ -174,8 +174,8 @@ func (frontend *Frontend) NewNewTemplateVueCtx(vertical VerticalMeta) (NewTempla
 		CamelCaseModelName:       strcase.ToLowerCamel(vertical.Name),
 		CamelCasePluralModelName: strcase.ToLowerCamel(pName),
 		TitleCaseModelPluralName: strcase.ToCamel(pName),
-		FormMapStatment:          frontend.GenerateFieldMap(vertical.Model.Fields),              // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
-		FormDefaultStatement:     frontend.GenerateFormDefaultsStatement(vertical.Model.Fields), // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
+		FormMapStatment:          frontend.GenerateFieldMap(vertical.Fields),              // TODO: LOOP {{.JSONFieldName}}:'{{.JSONFieldName}}',
+		FormDefaultStatement:     frontend.GenerateFormDefaultsStatement(vertical.Fields), // TODO:   {{.JSONFieldName}}:{{.JSONDefault}}, // default null|''|undefined|false
 	}
 	return out, nil
 }
@@ -198,7 +198,7 @@ func (_ *Frontend) GenerateNewVueFile(ctx NewTemplateVueCtx) (FileContainer, err
 // TODO: move to frontend ?
 func (frontend *Frontend) GetModelFieldMeta(vertical VerticalMeta) []ModelFieldMeta {
 	out := []ModelFieldMeta{}
-	for _, v := range vertical.Model.Fields {
+	for _, v := range vertical.Fields {
 		mfm := ModelFieldMeta{
 			FieldRule:     frontend.GetDefaultRule(v),
 			FieldName:     strcase.ToLowerCamel(v.Name),
@@ -237,10 +237,10 @@ func (frontend *Frontend) NewListTemplateVueCtx(vertical VerticalMeta) (ListTemp
 	out := ListTemplateVueCtx{
 		FileName:                 fileName,
 		ModelFieldsMeta:          fieldsmeta,
-		COLOverrideStatement:     frontend.GenerateCOLOverrideStatement(vertical.Model.Fields),
+		COLOverrideStatement:     frontend.GenerateCOLOverrideStatement(vertical.Fields),
 		ResourceRoute:            strcase.ToKebab(vertical.Name),
-		FormDefaultStatement:     frontend.GenerateFormDefaultsStatement(vertical.Model.Fields),
-		SearchStatement:          frontend.GenerateSearchStatement(vertical.Model.Fields),
+		FormDefaultStatement:     frontend.GenerateFormDefaultsStatement(vertical.Fields),
+		SearchStatement:          frontend.GenerateSearchStatement(vertical.Fields),
 		ModelTitleName:           strcase.ToCamel(vertical.Name),
 		TitleCaseModelName:       strcase.ToCamel(vertical.Name),
 		CamelCaseModelName:       strcase.ToLowerCamel(vertical.Name),

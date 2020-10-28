@@ -18,6 +18,7 @@ type Backend struct{}
 
 // GenerateStruct - generates a golang struct.
 func (_ *Backend) GenerateStruct(structName string, fields []SField) (string, error) {
+
 	structTpl := `
 	type {{.StructName}} struct {
 		{{.FieldsStr}}
@@ -203,7 +204,7 @@ type ModelCtx struct {
 
 func (backend *Backend) NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 	fields := []SField{}
-	for _, v := range v.Model.Fields {
+	for _, v := range v.Fields {
 		fields = append(fields, SField{
 			Name: v.Name,
 			Type: v.Type,
@@ -217,7 +218,7 @@ func (backend *Backend) NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 	}
 
 	updateFields := []SField{}
-	for _, v := range v.UpdateModel.Fields {
+	for _, v := range v.UpdateFields {
 		updateFields = append(updateFields, SField{
 			Name: v.Name,
 			Type: v.Type,
@@ -230,7 +231,7 @@ func (backend *Backend) NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 		return ModelCtx{}, err
 	}
 	createFields := []SField{}
-	for _, v := range v.CreateModel.Fields {
+	for _, v := range v.CreateFields {
 		createFields = append(createFields, SField{
 			Name: v.Name,
 			Type: v.Type,
@@ -247,66 +248,66 @@ func (backend *Backend) NewModelCtx(v VerticalMeta) (ModelCtx, error) {
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	mTrim, err := backend.GenerateTrim(mName, backend.GetStringFields(v.Model.Fields))
+	mTrim, err := backend.GenerateTrim(mName, backend.GetStringFields(v.Fields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	updateTrim, err := backend.GenerateTrim(updateName, backend.GetStringFields(v.UpdateModel.Fields))
+	updateTrim, err := backend.GenerateTrim(updateName, backend.GetStringFields(v.UpdateFields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	createTrim, err := backend.GenerateTrim(createName, backend.GetStringFields(v.CreateModel.Fields))
+	createTrim, err := backend.GenerateTrim(createName, backend.GetStringFields(v.CreateFields))
 
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	mNil, err := backend.GenerateInit(mName, backend.GetNilableFields(v.Model.Fields))
+	mNil, err := backend.GenerateInit(mName, backend.GetNilableFields(v.Fields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	updateNil, err := backend.GenerateInit(updateName, backend.GetNilableFields(v.UpdateModel.Fields))
+	updateNil, err := backend.GenerateInit(updateName, backend.GetNilableFields(v.UpdateFields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	createNil, err := backend.GenerateInit(createName, backend.GetNilableFields(v.CreateModel.Fields))
+	createNil, err := backend.GenerateInit(createName, backend.GetNilableFields(v.CreateFields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	mNew, err := backend.GenerateNew(mName, backend.GetNilableFields(v.Model.Fields))
+	mNew, err := backend.GenerateNew(mName, backend.GetNilableFields(v.Fields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	updateNew, err := backend.GenerateNew(updateName, backend.GetNilableFields(v.UpdateModel.Fields))
+	updateNew, err := backend.GenerateNew(updateName, backend.GetNilableFields(v.UpdateFields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	createNew, err := backend.GenerateNew(createName, backend.GetNilableFields(v.CreateModel.Fields))
+	createNew, err := backend.GenerateNew(createName, backend.GetNilableFields(v.CreateFields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	toUpdate, err := backend.GenerateMapFunc(mName, updateName, backend.GetCommon(v.Model.Fields, v.UpdateModel.Fields))
+	toUpdate, err := backend.GenerateMapFunc(mName, updateName, backend.GetCommon(v.Fields, v.UpdateFields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	toCreate, err := backend.GenerateMapFunc(mName, createName, backend.GetCommon(v.Model.Fields, v.CreateModel.Fields))
-	if err != nil {
-		return ModelCtx{}, err
-	}
-
-	uToModel, err := backend.GenerateMapFunc(updateName, mName, backend.GetCommon(v.Model.Fields, v.UpdateModel.Fields))
-	if err != nil {
-		return ModelCtx{}, err
-	}
-	uToCreate, err := backend.GenerateMapFunc(updateName, createName, backend.GetCommon(v.Model.Fields, v.CreateModel.Fields))
+	toCreate, err := backend.GenerateMapFunc(mName, createName, backend.GetCommon(v.Fields, v.CreateFields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
 
-	cToModel, err := backend.GenerateMapFunc(createName, mName, backend.GetCommon(v.Model.Fields, v.CreateModel.Fields))
+	uToModel, err := backend.GenerateMapFunc(updateName, mName, backend.GetCommon(v.Fields, v.UpdateFields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
-	cToUpdate, err := backend.GenerateMapFunc(createName, updateName, backend.GetCommon(v.Model.Fields, v.UpdateModel.Fields))
+	uToCreate, err := backend.GenerateMapFunc(updateName, createName, backend.GetCommon(v.Fields, v.CreateFields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+
+	cToModel, err := backend.GenerateMapFunc(createName, mName, backend.GetCommon(v.Fields, v.CreateFields))
+	if err != nil {
+		return ModelCtx{}, err
+	}
+	cToUpdate, err := backend.GenerateMapFunc(createName, updateName, backend.GetCommon(v.Fields, v.UpdateFields))
 	if err != nil {
 		return ModelCtx{}, err
 	}
@@ -429,7 +430,7 @@ func (_ *Backend) NewStoreCtx(v VerticalMeta, sql SQLContainer, baseCtx BaseAPPC
 	modelNameTitleCase := strcase.ToCamel(v.Name)
 
 	createProperties := []string{}
-	for _, v := range v.CreateModel.Fields {
+	for _, v := range v.CreateFields {
 		createProperties = append(createProperties, v.Name)
 	}
 	listF := func(idx int, cur, res string) string {
@@ -438,7 +439,7 @@ func (_ *Backend) NewStoreCtx(v VerticalMeta, sql SQLContainer, baseCtx BaseAPPC
 	createProperList := AggStrList(createProperties, listF)
 	createProperList = strings.Trim(createProperList, "\n")
 	updateProperties := []string{}
-	for _, v := range v.UpdateModel.Fields {
+	for _, v := range v.UpdateFields {
 		updateProperties = append(updateProperties, v.Name)
 	}
 	updateProperList := AggStrList(updateProperties, listF)

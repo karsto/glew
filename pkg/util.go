@@ -53,13 +53,7 @@ func (t *GoType) IsString() bool {
 	return t.Type == "string"
 }
 
-// ModelMeta - simple struct with name and field information required to describe a model
-type ModelMeta struct {
-	Name   string
-	Fields []GoType
-}
-
-func GetMeta(m interface{}) (ModelMeta, error) {
+func GetMeta(m interface{}) (string, []GoType, error) {
 	t := reflect.TypeOf(m)
 	fields := []reflect.StructField{}
 	tagMap := map[string]reflect.StructTag{}
@@ -69,19 +63,16 @@ func GetMeta(m interface{}) (ModelMeta, error) {
 		tagMap[f.Name] = f.Tag
 	}
 
-	out := []GoType{}
+	goTypes := []GoType{}
 	for _, f := range fields {
-		out = append(out, GoType{
+		goTypes = append(goTypes, GoType{
 			Name: f.Name,
 			Type: f.Type.String(),
 			Tags: f.Tag,
 		})
 	}
-	modelOut := ModelMeta{
-		Name:   t.Name(),
-		Fields: out,
-	}
-	return modelOut, nil
+
+	return t.Name(), goTypes, nil
 }
 
 type Paths struct {

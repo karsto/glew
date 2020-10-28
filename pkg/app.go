@@ -65,11 +65,8 @@ func (_ *App) GetVerticalsFromFile(filePath string) ([]VerticalMeta, error) {
 						}
 						fields = append(fields, fieldSpec)
 					}
-
-					meta.UpdateModel = &ModelMeta{
-						Name:   spec.Name.Name,
-						Fields: fields,
-					}
+					meta.UpdateName = spec.Name.Name
+					meta.UpdateFields = fields
 				}
 				// TODO: put back in map
 
@@ -85,11 +82,17 @@ func (_ *App) GetVerticalsFromFile(filePath string) ([]VerticalMeta, error) {
 
 	result := make([]VerticalMeta, 0, len(structMap))
 	for _, v := range structMap {
-		if v.CreateModel == nil {
-			v.CreateModel = v.Model
+		if len(v.CreateName) == 0 {
+			v.CreateName = v.Name
 		}
-		if v.UpdateModel == nil {
-			v.UpdateModel = v.CreateModel
+		if len(v.CreateFields) == 0 {
+			v.CreateFields = v.Fields
+		}
+		if len(v.UpdateName) == 0 {
+			v.UpdateName = v.Name
+		}
+		if len(v.UpdateFields) == 0 {
+			v.UpdateFields = v.Fields
 		}
 		result = append(result, v)
 	}
@@ -109,27 +112,29 @@ func (_ *App) GenerateVerticalMeta(model interface{}, name string, createM, putM
 	if putM == nil {
 		putM = createM
 	}
-	modelMeta, err := GetMeta(model)
+	modelName, modelFields, err := GetMeta(model)
 	if err != nil {
 		return VerticalMeta{}, err
 	}
 	if len(name) < 1 {
-		name = modelMeta.Name
+		name = modelName
 	}
 
-	createMeta, err := GetMeta(createM)
+	createName, createFields, err := GetMeta(createM)
 	if err != nil {
 		return VerticalMeta{}, err
 	}
-	updateMeta, err := GetMeta(putM)
+	updateName, updateFields, err := GetMeta(putM)
 	if err != nil {
 		return VerticalMeta{}, err
 	}
 	out := VerticalMeta{
-		Name:        name,
-		Model:       &modelMeta,
-		CreateModel: &createMeta,
-		UpdateModel: &updateMeta,
+		Name:         modelName,
+		CreateName:   createName,
+		UpdateName:   updateName,
+		Fields:       modelFields,
+		CreateFields: createFields,
+		UpdateFields: updateFields,
 	}
 	return out, nil
 }
@@ -342,10 +347,12 @@ func (app *App) GenerateApp(cfg FeatureConfig, destRoot, appName string, vertica
 
 // Vertical Meta - all the meta information needed to create a vertical.
 type VerticalMeta struct {
-	Name        string //TODO: what is name vs model.name
-	Model       *ModelMeta
-	CreateModel *ModelMeta
-	UpdateModel *ModelMeta
+	Name         string
+	UpdateName   string
+	CreateName   string
+	Fields       []GoType
+	CreateFields []GoType
+	UpdateFields []GoType
 }
 
 // GeneratedVertical - the resulting vertical feature set. Contains Raw strings and objects generated in case they are to be used elsewhere as well as file containers aka digital abstractions of files.

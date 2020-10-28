@@ -305,7 +305,7 @@ func (db *DB) NewSQLCtx(vertical VerticalMeta, dbScriptIdxStart int) SQLCtx {
 	dbFields := []string{}
 	createStatements := []string{}
 	idColName := ".TODOidColName"
-	for _, v := range vertical.Model.Fields {
+	for _, v := range vertical.Fields {
 		dbCtx := db.NewDBTypeCtx(v)
 		if dbCtx.IsPK {
 			idColName = dbCtx.Name
@@ -316,13 +316,13 @@ func (db *DB) NewSQLCtx(vertical VerticalMeta, dbScriptIdxStart int) SQLCtx {
 	}
 
 	insertFields := []string{}
-	for _, v := range vertical.CreateModel.Fields {
+	for _, v := range vertical.CreateFields {
 		dbCtx := db.NewDBTypeCtx(v)
 		insertFields = append(insertFields, dbCtx.Name)
 	}
 
 	putFields := []string{}
-	for _, v := range vertical.CreateModel.Fields {
+	for _, v := range vertical.UpdateFields {
 		dbCtx := db.NewDBTypeCtx(v)
 		putFields = append(putFields, dbCtx.Name)
 	}

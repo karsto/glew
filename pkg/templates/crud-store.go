@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx"
 	"github.com/jmoiron/sqlx"
 	"github.com/karsto/common/sqlutil"
 	store "github.com/karsto/glew/templates"
